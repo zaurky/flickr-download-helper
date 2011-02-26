@@ -1,0 +1,43 @@
+a:link {
+    color: gray;
+    text-decoration:none;
+}
+
+a:visited {
+    color: gray;
+    text-decoration:none;
+}
+
+a:active {
+    color: black;
+    text-decoration:none;
+}
+
+a:hover {
+    color: gray;
+    text-decoration:none;
+}
+
+
+#popitmenu{
+position: absolute;
+background-color: white;
+border:1px solid black;
+font: normal 12px Verdana;
+line-height: 18px;
+z-index: 100;
+visibility: hidden;
+}
+
+#popitmenu a{
+text-decoration: none;
+padding-left: 6px;
+color: black;
+display: block;
+}
+
+#popitmenu a:hover{ /*hover background color*/
+background-color: #CCFF9D;
+}
+
+

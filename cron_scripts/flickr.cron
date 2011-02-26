@@ -1,0 +1,29 @@
+#!/bin/sh
+
+export LANG='fr_FR.UTF-8'
+. /etc/fdh/fdh.sh
+
+TIMESTAMP="$FLICKRDIR/log/timestamp.cron"
+OPTIONS=" -d -r "
+
+if [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
+    if [ -f $TIMESTAMP ]; then
+        SINCE=`cat $TIMESTAMP`
+    else
+        SINCE=''
+    fi
+    date +%s > $TIMESTAMP
+
+    if [ "x$SINCE" != "x" ]; then
+        let SINCE=$SINCE-60
+        OPTIONS="$OPTIONS --since $SINCE "
+    fi
+
+    cd $FLICKRDIR
+    rm -f $FLICKRDIR/log/cron.std*
+
+    python /usr/bin/flickr_download_helper_contacts.py  $OPTIONS >> $FLICKRDIR/log/cron.stdout 2>> $FLICKRDIR/log/cron.stderr
+#    for u in `/usr/bin/getContacts.py`; do
+#        python /usr/bin/flickr_download_helper.py --nick "$u" $OPTIONS >> $FLICKRDIR/log/cron.stdout 2>> $FLICKRDIR/log/cron.stderr
+#    done
+fi

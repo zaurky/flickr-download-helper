@@ -1,0 +1,11 @@
+#!/bin/sh
+
+export LANG='fr_FR.UTF-8'
+. /etc/fdh/fdh.sh
+
+OPTIONS=" -d -r --smart --since last1h"
+
+if [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
+    cd $FLICKRDIR
+    python /usr/bin/flickr_download_helper_contacts.py $OPTIONS >> $FLICKRDIR/log/smart_cron.stdout 2>> $FLICKRDIR/log/smart_cron.stderr
+fi

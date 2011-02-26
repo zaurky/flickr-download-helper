@@ -1,0 +1,16 @@
+#!/bin/sh
+
+export LANG='fr_FR.UTF-8'
+. /etc/fdh/fdh.sh
+
+OPTIONS=" -d -r "
+
+if [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
+    cd $FLICKRDIR
+    rm -f $FLICKRDIR/log/tdf.std*
+
+    for i in `bin/getContacts.py `; do
+      echo "$i"
+      flickr_download_helper.py -d -r --dw --nick "$i" --tfg >> $FLICKRDIR/log/tdf.stdout 2>> $FLICKRDIR/log/tdf.stderr
+    done
+fi

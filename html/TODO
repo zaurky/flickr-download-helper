@@ -1,0 +1,3 @@
+ * mettre toutes les vignettes en cache (en passant par le proxy)
+ * supprimer la vignette quand on supprime la photo
+ * mettre en place le meme mechanisme pour les photos
