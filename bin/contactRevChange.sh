@@ -10,7 +10,9 @@ diff $FDHPATH/files/contacts_rev.old $FDHPATH/files/contacts_rev.new | grep ' ' 
 if [ `wc -l $FDHPATH/files/contacts_rev.diff | awk '{print $1}'` -ne 0 ]; then
     if [ -s $FDHPATH/files/contacts_rev.diff ]; then
         for i in `cat $FDHPATH/files/contacts_rev.diff | grep '>' | awk '{print $2}'`; do
+            $FDHPATH/bin/fdh.py -d -r --nick $i --sbp
             $FDHPATH/bin/fdh.py -d -r --nick $i
+            $FDHPATH/bin/fdh.py -d -r --nick $i --tfg
         done
         date >> $FDHPATH/files/contacts_rev_change
         cat $FDHPATH/files/contacts_rev.diff >> $FDHPATH/files/contacts_rev_change
