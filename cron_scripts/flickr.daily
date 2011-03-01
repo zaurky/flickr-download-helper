@@ -9,5 +9,6 @@ if [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
     cd $FLICKRDIR
     rm -f $FLICKRDIR/log/daily.std*
 
+    python /usr/bin/flickr_download_helper_force_reload.py >> $FLICKRDIR/log/daily.stdout 2>> $FLICKRDIR/log/daily.stderr
     python /usr/bin/flickr_download_helper_contacts.py $OPTIONS >> $FLICKRDIR/log/daily.stdout 2>> $FLICKRDIR/log/daily.stderr
 fi
