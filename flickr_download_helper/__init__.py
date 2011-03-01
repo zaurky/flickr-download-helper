@@ -246,7 +246,6 @@ def main(api, token):
                     photos.extend(l_photos)
             total = len(photos)
             # user_id ok
-            existing = Existing(user_id, user_name)
             photos = existing.grepPhotosDontExists(photos)
             total_after_filter = len(photos)
             if total != total_after_filter:
@@ -313,7 +312,6 @@ def main(api, token):
                     photos = getUserPhotos(api, token, user_id)
                 total = len(photos)
                 # user_id ok
-                existing = Existing(user_id, user_name)
                 photos = existing.grepPhotosDontExists(photos)
                 total_after_filter = len(photos)
                 if total != total_after_filter:
