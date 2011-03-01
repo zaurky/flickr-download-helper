@@ -232,7 +232,6 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None):
 
     content = rsp_json['photos']['photo']
     if len(content)%100 != 0:
-#    if int(len(content) + (page-1)*100) < int(rsp_json['photos']['total']):
         next = getGroupPhotos(api, token, group_id, page = page+1, user_id = user_id)
         content.extend(next)
     return content
@@ -242,9 +241,6 @@ def getUserGroups(api, token, user_id, page = 1):
     if not rsp_json: return []
 
     content = rsp_json['groups']['group']
-#    if int(len(content) + (page-1)*100) != int(rsp_json['groups']['total']):
-#        next = getUserGroup(api, token, user_id, page+1)
-#        content.extend(next)
     return content
 
 def getUserPhotos(api, token, user_id, min_upload_date = None, page = 1):
@@ -348,7 +344,7 @@ def searchPhotos(api, token, params, page=1):
     if int(len(ret) + (page-1)*100) != int(rsp_json['photos']['total']):
         next = searchPhotos(api, token, params, page+1)
         content.extend(next)
-    return content #ret['photos']['photo']
+    return content
 
 def getPhotosByTag(api, token, user_id, tags, page=1):
     rsp_json = json_request(api, token, 'flickr.photos.search', "error while searching photos (%s)", [], user_id=user_id, tags=tags, content_type=7, page=page)
@@ -413,10 +409,6 @@ def getUserFavorites(api, token, user_id, page = 1, one_shot = False, per_page =
             else:
                 break
     return content
-
-#def getContactRecentlyUploaded(api, token, page = 1):
-#    rsp_json = json_request(api, token, 'flickr.contacts.getListRecentlyUploaded', 'error while getting the contact recently uploaded files (%s)', [], page=page)
-#    if not rsp_json: return []
 
 def getContactsPhotos(api, token):
     rsp_json = json_request(api, token, 'flickr.photos.getContactsPhotos', 'error while getting the contacts photos (%s)', [])
@@ -504,22 +496,7 @@ def downloadPhotoFromURL(url, filename, existing = None):
 
     if content == None: return 0
     FileWrite().write(filename, content)
-#    try:
-#        f = open(filename, 'wb')
-#        f.write(content)
-#        f.close()
-#    except OSError, e:
-#        if e.errno == 28:
-#            ret = waitFor("there is not enough space to continue, please delete some files and try again")
-#            if ret:
-#                f = open(filename, 'wb')
-#                f.write(content)
-#                f.close()
-#            else:
-#                raise e
-#        else:
-#            raise e
-#
+
     if OPT.new_in_dir and type(OPT.new_in_dir) != bool:
         link_dest = os.path.join(OPT.new_in_dir, os.path.basename(filename))
         if not os.path.exists(link_dest):
@@ -528,12 +505,7 @@ def downloadPhotoFromURL(url, filename, existing = None):
             except Exception, e:
                 Logger().error(e)
     if OPT.daily_in_dir and type(OPT.daily_in_dir) != bool:
-#        Logger().error(OPT.daily_in_dir)
-#        Logger().error(filename)
-#        Logger().error(os.path.basename(os.path.dirname(filename)))
         link_dest = os.path.join(OPT.daily_in_dir, '_'.join([os.path.basename(os.path.dirname(filename)), os.path.basename(filename)]))
-#        Logger().error(os.path.join(OPT.daily_in_dir, '_'.join([os.path.basename(os.path.dirname(filename)), os.path.basename(filename)])))
-#        link_dest = os.path.join(OPT.daily_in_dir, os.path.basename(filename))
         if not os.path.exists(link_dest):
             try:
                 os.symlink(filename, link_dest)
@@ -608,7 +580,6 @@ def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id)
         total = len(photos)
         existing = Existing(user_id, user_name)
         photos = existing.grepPhotosDontExists(photos)
-#        photos = Existing().grepPhotosDontExists(photos)
         total_after_filter = len(photos)
         if total != total_after_filter:
             Logger().info("filter %d photos" % (total - total_after_filter))
