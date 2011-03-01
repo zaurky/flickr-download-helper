@@ -539,8 +539,10 @@ def getAllPreviousUsers(backup_dir):
         ret.extend(files)
     return ret
 
-def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id):
+def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id, existing = None):
         photo_id2destination = {}
+        if existing == None:
+            existing = Existing(user_id, user_name)
         # prepare the photo directory
         Logger().info("\n== prepare the photo directory")
         try:
@@ -578,7 +580,6 @@ def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id)
         for photo in photos:
             photo_id2destination[photo['id']] = destination
         total = len(photos)
-        existing = Existing(user_id, user_name)
         photos = existing.grepPhotosDontExists(photos)
         total_after_filter = len(photos)
         if total != total_after_filter:

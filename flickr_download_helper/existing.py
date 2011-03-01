@@ -1,5 +1,6 @@
 from flickr_download_helper.config import OPT, Singleton
 from flickr_download_helper.utils import waitFor
+from flickr_download_helper.logger import Logger
 import pickle
 import shutil
 import os, errno
@@ -45,16 +46,19 @@ class Existing():
     my_file = None
     user_id = None
     photo_dir = None
+    logger = None
 
     def __init__(self, user_id, sub_photo_dir):
+        self.logger = Logger()
+        self.logger.info(">>Existing initialising with %s %s"%(user_id, sub_photo_dir))
         self.user_id = user_id
         self.photo_dir = os.path.join(OPT.photo_dir, sub_photo_dir)
         if os.path.exists(OPT.existing_ids_file) and os.path.isdir(OPT.existing_ids_file):
             self.my_file = os.path.join(OPT.existing_ids_file, user_id)
-        if not self.restoreFromFile():
-            self.internals['ids'] = self.getIdsFromDir(self.photo_dir)
+        self.restoreFromFile()
 
     def backupToFile(self):
+        self.logger.info(">>Existing backupToFile (%s)"%(self.user_id))
         if not self.my_file: return -1
         if os.path.exists(self.my_file):
             shutil.move(self.my_file, "%s.bkp"%(self.my_file))
@@ -63,6 +67,7 @@ class Existing():
         f.close()
 
     def restoreFromFile(self):
+        self.logger.info(">>Existing restoreFromFile (%s)"%(self.user_id))
         if os.path.exists(self.my_file):
             try:
                 f = open(self.my_file, 'rb')
@@ -73,10 +78,16 @@ class Existing():
                 # todo change!
                 self.internals['ids'] = self.getIdsFromDir(self.photo_dir)
         else:
-            return False
+            self.internals['ids'] = self.getIdsFromDir(self.photo_dir)
+        return True
+
+    def forceReload(self):
+        self.logger.debug(">>Existing forceReload (%s)"%(self.user_id))
+        self.internals['ids'] = self.getIdsFromDir(self.photo_dir)
         return True
 
     def addFile(self, filename):
+        self.logger.debug(">>Existing addFile %s (%s)"%(filename, self.user_id))
         basename = os.path.basename(filename).split('_')
         id = basename[0]
         self.internals['ids'].append(id)

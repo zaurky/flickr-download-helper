@@ -130,7 +130,9 @@ def main(api, token):
         user_name = user['username']
         Logger().warn("username = %s"%user_name)
 
-        urls, photo_id2destination, destination, infos = getPhotoset(OPT, api, token, user_name, OPT.photoset_id, photoset_name, user_id)
+        existing = Existing(user_id, user_name)
+
+        urls, photo_id2destination, destination, infos = getPhotoset(OPT, api, token, user_name, OPT.photoset_id, photoset_name, user_id, existing)
 
     elif OPT.photo_ids:
         Logger().info("\n== retrieve photos informations")
@@ -196,6 +198,7 @@ def main(api, token):
         user_id = user['id']
         Logger().warn("username = %s"%user_name)
 
+        existing = Existing(user_id, user_name)
         if OPT.collection_id:
             Logger().info("\n== getting collection %s"%OPT.collection_id)
             OPT.sort_by_user = True
@@ -205,7 +208,7 @@ def main(api, token):
             destination = ""
             for photoset in photosets:
                 Logger().info("\n== getting photoset %s"%photoset['title'])
-                l_urls, l_photo_id2destination, destination, infos = getPhotoset(OPT, api, token, user_name, photoset['id'], photoset['title'], user_id)
+                l_urls, l_photo_id2destination, destination, infos = getPhotoset(OPT, api, token, user_name, photoset['id'], photoset['title'], user_id, existing)
                 urls = extends(urls, l_urls)
                 photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
         elif OPT.sort_by_photoset:
@@ -217,7 +220,7 @@ def main(api, token):
             destination = ""
             for photoset in photosets:
                 Logger().info("\n== getting photoset %s"%photoset['title'])
-                l_urls, l_photo_id2destination, destination, l_infos = getPhotoset(OPT, api, token, user_name, photoset['id'], photoset['title'], user_id)
+                l_urls, l_photo_id2destination, destination, l_infos = getPhotoset(OPT, api, token, user_name, photoset['id'], photoset['title'], user_id, existing)
                 urls = extends(urls, l_urls)
                 photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
                 infos = extends(infos, l_infos)
