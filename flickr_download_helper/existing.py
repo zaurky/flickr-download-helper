@@ -42,9 +42,10 @@ class FileWrite(Singleton):
 
 
 class Existing():
-    internals = {'ids':None}
+    internals = {'ids':None, 'usernames':[]}
     my_file = None
     user_id = None
+    user_name = None
     photo_dir = None
     logger = None
 
@@ -52,7 +53,9 @@ class Existing():
         self.logger = Logger()
         self.logger.info(">>Existing initialising with %s %s"%(user_id, sub_photo_dir))
         self.user_id = user_id
-        self.photo_dir = os.path.join(OPT.photo_dir, sub_photo_dir)
+        self.user_name = sub_photo_dir
+        if self.user_name not in self.internals['usernames']:
+            self.internals['usernames'].append(self.user_name)
         if os.path.exists(OPT.existing_ids_file) and os.path.isdir(OPT.existing_ids_file):
             self.my_file = os.path.join(OPT.existing_ids_file, user_id)
         self.restoreFromFile()
@@ -76,14 +79,18 @@ class Existing():
             except:
                 self.internals = {'ids':None}
                 # todo change!
-                self.internals['ids'] = self.getIdsFromDir(self.photo_dir)
+                self.internals['ids'] = self.getIdsFromDir()
         else:
-            self.internals['ids'] = self.getIdsFromDir(self.photo_dir)
+            self.internals['ids'] = self.getIdsFromDir()
+        if 'usernames' not in self.internals:
+            self.internals['usernames'] = []
+        if self.user_name not in self.internals['usernames']:
+            self.internals['usernames'].append(self.user_name)
         return True
 
     def forceReload(self):
         self.logger.debug(">>Existing forceReload (%s)"%(self.user_id))
-        self.internals['ids'] = self.getIdsFromDir(self.photo_dir)
+        self.internals['ids'] = self.getIdsFromDir()
         return True
 
     def addFile(self, filename):
@@ -98,19 +105,21 @@ class Existing():
             ret.extend(files)
         return ret
 
-    def getIdsFromDir(self, directory):
+    def getIdsFromDir(self):
         ret = []
-        files = self.readDir(directory)
-        for file in files:
-            f = file.split("_")
-            id = f[0]
-            ret.append(id)
+        for user_name in self.internals['usernames']:
+            directory = os.path.join(OPT.photo_dir, user_name)
+            files = self.readDir(directory)
+            for file in files:
+                f = file.split("_")
+                id = f[0]
+                ret.append(id)
         return ret
 
     def exists(self, id):
         if self.internals['ids'] == None:
             # todo change
-            self.internals['ids'] = self.getIdsFromDir(self.photo_dir)
+            self.internals['ids'] = self.getIdsFromDir()
 
         return (id in self.internals['ids'])
 
