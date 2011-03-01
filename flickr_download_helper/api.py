@@ -495,7 +495,7 @@ def downloadPhotoFromURL(url, filename, existing = None):
             Logger().error("while downloading the file from %s (e: %s)"%(url, str(e)))
 
     if content == None: return 0
-    FileWrite().write(filename, content)
+    FileWrite().write(filename, content, existing)
 
     if OPT.new_in_dir and type(OPT.new_in_dir) != bool:
         link_dest = os.path.join(OPT.new_in_dir, os.path.basename(filename))
