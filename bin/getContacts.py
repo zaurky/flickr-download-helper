@@ -30,7 +30,11 @@ for c in contacts:
     line = []
     user = None
     if OPT.advContactFields:
-        user = getUserFromID(api, c['nsid'], token)
+        try:
+            user = getUserFromID(api, c['nsid'], token)
+        except:
+            # second try
+            user = getUserFromID(api, c['nsid'], token)
     for field in OPT.getContactFields:
         if field in c: line.append(c[field].strip())
         elif user and field in user:

@@ -73,6 +73,7 @@ def getContactsPhotos(api, token):
         reactor.callLater(OPT.loop, getContactsPhotos, api, token)
     else:
         reactor.stop()
+        sys.exit(0)
 
 if __name__ == "__main__":
     try:
@@ -85,15 +86,21 @@ if __name__ == "__main__":
                 Logger().error(info[1])
                 Logger().print_tb(info[2])
             except:
-                print info
-                print info[1]
-                traceback.print_tb(info[2])
+                try:
+                    print info
+                    print info[1]
+                    traceback.print_tb(info[2])
+                except:
+                    sys.exit(-2)
         else:
             try:
                 Logger().error(info[1])
             except:
-                print info[1]
-                traceback.print_tb(info[2])
+                try:
+                    print info[1]
+                    traceback.print_tb(info[2])
+                except:
+                    sys.exit(-3)
         sys.exit(-1)
 
     OPT.url = None
@@ -106,6 +113,7 @@ if __name__ == "__main__":
     OPT.daily_in_dir = True
 
     reactor.callLater(1, getContactsPhotos, api, token)
+    #reactor.add
     reactor.run()
 
 

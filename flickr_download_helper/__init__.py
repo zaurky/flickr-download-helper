@@ -288,8 +288,11 @@ def main(api, token):
                 Logger().error("%s: %s (%s)"%(e.errno, e.filename, e.strerror))
                 raise e
             except UnicodeEncodeError, e:
+                Logger().error(e)
+                Logger().error(str(e))
+                Logger().error(dir(e))
                 Logger().error(e.message)
-                Logger().print_tb(e)
+                #Logger().print_tb(e)
                 raise e
             except Exception, e:
                 Logger().error(str(e))
