@@ -1,0 +1,10 @@
+#!/bin/sh
+
+export LANG='fr_FR.UTF-8'
+. /etc/fdh/fdh.sh
+
+DATE=`date +%Y%m%d`
+
+if [ "x$DISABLE" == "x" ] && [ -d "$NEWS_DIR" ] && [ -d "$THUMBDIR" ]; then
+    echo /usr/bin/flickr_create_news_thumbnail.sh $DATE
+fi
