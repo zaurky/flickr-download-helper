@@ -5,7 +5,7 @@ export LANG='fr_FR.UTF-8'
 
 OPTIONS=" -d -r "
 
-if [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
+if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
     cd $FLICKRDIR
     rm -f $FLICKRDIR/log/daily.std*
 

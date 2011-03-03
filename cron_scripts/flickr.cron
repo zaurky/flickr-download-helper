@@ -6,7 +6,7 @@ export LANG='fr_FR.UTF-8'
 TIMESTAMP="$FLICKRDIR/log/timestamp.cron"
 OPTIONS=" -d -r "
 
-if [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
+if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
     if [ -f $TIMESTAMP ]; then
         SINCE=`cat $TIMESTAMP`
     else
