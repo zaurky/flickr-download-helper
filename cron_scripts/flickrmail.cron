@@ -4,9 +4,9 @@
 
 if [ -f $FLICKRDIR/log/fdhmail ]; then
     DATE=`cat $FLICKRDIR/log/fdhmail`
-    perl $FLICKRDIR/bin/parselog2.pl $FLICKRDIR/log/fdh.log $DATE NOCOLOR | grep -v "< $DATE" > $FLICKRDIR/log/fdhmail.txt
+    perl $FLICKRDIR/bin/parselog2.pl $FLICKRDIR/log/fdh.log.$DATE.0 NOCOLOR | grep -v "< $DATE" > $FLICKRDIR/log/fdhmail.txt
     cat $FLICKRDIR/log/fdhmail.txt | mail -s "FLICKR DOWNLOAD HELPER [$DATE]" -r belial9931@yssuor.org belial9931@yssuor.org
     rm -f $FLICKRDIR/log/fdhmail.txt
 fi
 
-date +"%Y-%m-%d" > $FLICKRDIR/log/fdhmail
+date +"%Y%m%d" > $FLICKRDIR/log/fdhmail
