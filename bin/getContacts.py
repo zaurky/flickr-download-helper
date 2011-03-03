@@ -43,11 +43,12 @@ for c in contacts:
             else:
                 line.append(user[field])
 
+
     if len(line) == 0:
         print c['nsid']
     else:
-#        try:
+        try:
             print u"\t".join(map(unicode, line))
-#        except:
-#            print line
+        except:
+            print line
 
