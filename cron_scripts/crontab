@@ -1,0 +1,36 @@
+# m h  dom mon dow   command
+################################
+# flickr routines
+# demarre toutes les 5 minutes sauf entre 57 et 7
+7,17,27,37,47,57 * * * * /root/fdh/cron_scripts/flickr_smart.cron
+12,22,32,42,52 * * * * /root/fdh/cron_scripts/flickr_smart.cron
+
+# demarre toutes les heures sauf a minuit
+0 1-23 * * * /root/fdh/cron_scripts/flickr.cron
+
+# demarre toutes les 30 minutes
+*/30 * * * * /root/fdh/cron_scripts/flickr_generate_thumbs.cron
+
+# demarre a minuit tous les jours
+0 0 * * * /root/fdh/cron_scripts/flickr.daily
+
+# demarre a deux heures les mardi, jeudi, samedi et dimanche
+0 2 * * 0,2,4,6 /root/fdh/cron_scripts/flickr.tfg
+
+# demarre toutes les heures a 30
+30 * * * * /root/fdh/bin/contactRevChange.sh
+# demarre toutes les heures a 45
+45 * * * * /root/fdh/bin/contactChange.sh
+
+# demarre tous les jours a minuit - 1
+59 23 * * * /root/fdh/bin/logRotate.sh
+
+# demarre tous les jours a minuit + 1
+1 0 * * * killall tail
+2 0 * * * tail fdh/log/fdh.log -f -n 300  -- | egrep '(WARNING|ERROR)' > /var/www/flickr/log &
+
+# demarre 4 fois par jour
+* */4 * * * /root/fdh/bin/contactRevChangeName.sh
+
+################################
+
