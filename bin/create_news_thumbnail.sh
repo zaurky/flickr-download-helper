@@ -1,28 +1,38 @@
 #!/bin/zsh
 
-NEWS_DIR="/home/olivier/.flickr_download_helper/news/daily"
-THUMBDIR="/media/MEDIA/olivier/thumb"
-TMPDIR='/tmp'
+source /etc/fdh/fdh.sh
 
-find $NEWS_DIR -type d > $TMPDIR/fdh.thumbgen.dirs
-rm -f "$TMPDIR/fdh.thumbgen.files"
-for i in `echo $NEWS_DIR/**/*(oc@)`; do
-    echo "$i" >> $TMPDIR/fdh.thumbgen.files
+TAG=`date +%s`
+DAY=$argv[1]
+
+if [ "x$DAY" != "x" ]; then
+    WORKING_DIR="$NEWS_DIR/$DAY"
+else
+    WORKING_DIR="$NEWS_DIR"
+fi
+find $WORKING_DIR -type d > $TMPDIR/fdh.thumbgen.dirs.$TAG
+
+rm -f "$TMPDIR/fdh.thumbgen.files.$TAG"
+for i in `echo $WORKING_DIR/**/*(oc@) | sed -e 's| |##|g' | sed -e 's|##/| /|g'`; do
+    i=`echo "$i" | sed -e 's|##| |g'`
+    echo "$i" >> $TMPDIR/fdh.thumbgen.files.$TAG
 done
-#echo $NEWS_DIR/**/*(oc.)  > $TMPDIR/fdh.thumbgen.files
-# find $NEWS_DIR -type l > $TMPDIR/fdh.thumbgen.files
 
-cat $TMPDIR/fdh.thumbgen.dirs | sed -e "s|$NEWS_DIR|$THUMBDIR\/square|" > $TMPDIR/fdh.thumbgen.dirstocreate
-for i in `cat $TMPDIR/fdh.thumbgen.dirstocreate`; do mkdir -p "$i"; done
-rm -f $TMPDIR/fdh.thumbgen.dirstocreate
+cat $TMPDIR/fdh.thumbgen.dirs.$TAG | sed -e "s|$NEWS_DIR|$THUMBDIR\/square|" > $TMPDIR/fdh.thumbgen.dirstocreate.$TAG
+for i in `cat $TMPDIR/fdh.thumbgen.dirstocreate.$TAG`; do mkdir -p "$i"; done
+rm -f $TMPDIR/fdh.thumbgen.dirstocreate.$TAG
 
-cat $TMPDIR/fdh.thumbgen.dirs | sed -e "s|$NEWS_DIR|$THUMBDIR\/mobile|" > $TMPDIR/fdh.thumbgen.dirstocreate
-for i in `cat $TMPDIR/fdh.thumbgen.dirstocreate`; do mkdir -p "$i"; done
-rm -f $TMPDIR/fdh.thumbgen.dirstocreate
+cat $TMPDIR/fdh.thumbgen.dirs.$TAG | sed -e "s|$NEWS_DIR|$THUMBDIR\/mobile|" > $TMPDIR/fdh.thumbgen.dirstocreate.$TAG
+for i in `cat $TMPDIR/fdh.thumbgen.dirstocreate.$TAG`; do mkdir -p "$i"; done
+rm -f $TMPDIR/fdh.thumbgen.dirstocreate.$TAG
 
-rm -f "$THUMBDIR/*.files"
+if [ "x$DAY" != "x" ]; then
+    rm -f "$THUMBDIR/$DAY.files"
+else
+    rm -f "$THUMBDIR/*.files"
+fi
 
-for i in `cat $TMPDIR/fdh.thumbgen.files | sed -e 's| |##|g'`; do
+for i in `cat $TMPDIR/fdh.thumbgen.files.$TAG | sed -e 's| |##|g'`; do
     THUMBFILE=`echo "$i" |  sed -e "s|$NEWS_DIR|$THUMBDIR\/square|" | sed -e 's|##| |g'`
     MOBILEFILE=`echo "$i" |  sed -e "s|$NEWS_DIR|$THUMBDIR\/mobile|" | sed -e 's|##| |g'`
 
@@ -32,8 +42,8 @@ for i in `cat $TMPDIR/fdh.thumbgen.files | sed -e 's| |##|g'`; do
     if [ ! -e "$THUMBFILE" ]; then
         convert -thumbnail "80x80" "$FILE" "$THUMBFILE"
     fi
-    if [ ! -e "$MOBILEFILE" ]; then
-        convert -resize "800x800" "$FILE" "$MOBILEFILE"
-    fi
+#    if [ ! -e "$MOBILEFILE" ]; then
+#        convert -resize "800x800" "$FILE" "$MOBILEFILE"
+#    fi
     echo `basename "$FILE"` >> "$THUMBDIR/$DATE.files"
 done
