@@ -4,6 +4,7 @@ from flickr_download_helper.api import getPhotoInfo
 from flickr_download_helper.logger import Logger
 import pyexiv2
 import os
+import re
 
 def fillDir(api, token, args, dirname, names):
     total_count = len(names)
@@ -18,18 +19,37 @@ def fillDir(api, token, args, dirname, names):
         count += 1
 
 def writeMetadata(metadata, key, val):
-    metadata[key] = pyexiv2.ExifTag(key, val)
+    if isinstance(metadata, dict):
+        metadata[key] = pyexiv2.ExifTag(key, val)
+    else:
+        metadata[key] = val
     return metadata
 
 def contains(metadata, key):
-    try: metadata[key]
-    except KeyError: return None
-    return metadata[key]
-
+    if isinstance(metadata, dict):
+        if key in metadata:
+            return metadata[key]
+        return None
+    else: # is image
+        if key in metadata.exifKeys():
+            return metadata[key]
+        return None
+        
+def getMetadata(filename):
+    try:
+        metadata = pyexiv2.ImageMetadata(filename)
+        metadata.read()
+        return metadata
+    except:
+        image = pyexiv2.Image(filename)
+        metadata = image.readMetadata()
+        return image
+    return None
+    
 def getGeneralInfo(filename):
     ret = {}
-    metadata = pyexiv2.ImageMetadata(filename)
-    metadata.read()
+    metadata = getMetadata(filename)
+
     artist = contains(metadata, 'Exif.Image.Artist')
     if artist != None:
         ret['Exif.Image.Artist'] = artist.value
@@ -78,22 +98,31 @@ def putGeneralInfo(api, token, photo_id, metadata, info = None):
 def fillFile(api, token, file_path, count = None, total_count = None, info = None):
     filename = os.path.basename(file_path)
     tmp = filename.split('_')
-    photoid = tmp[0]
+    i = 0
+    while not re.match('^\d{10}$', tmp[i]) and i < len(tmp)-1:
+        i += 1
+    photoid = tmp[i]
     if count == None:
         Logger().debug("filling photo %s"%(photoid))
     else:
         Logger().debug("filling photo %s (%i/%i)"%(photoid, count, total_count))
 
     try:
-        metadata = pyexiv2.ImageMetadata(file_path)
-        metadata.read()
+        metadata = getMetadata(file_path)
 
         metadata = putGeneralInfo(api, token, photoid, metadata, info)
 
-        metadata.write()
+        if isinstance(metadata, dict):
+            metadata.write()
+        else:
+            metadata.writeMetadata()
     except IOError:
         Logger().warn("Can't read file %s"%(file_path))
-    except  Exception, e:
+    except AttributeError, e:
+        Logger().error(e)
+    except TypeError, e:
+        Logger().error(e)
+    except Exception, e:
         Logger().print_tb(e)
         Logger().error(e)
         Logger().warn("Can't fill photo %s"%(photoid))
