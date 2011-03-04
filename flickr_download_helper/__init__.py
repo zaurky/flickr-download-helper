@@ -42,7 +42,7 @@ def main_init(read_command_line = True):
     #os.close(sys.stderr.fileno())
 
     Logger().warn("####################################################################")
-    Logger().warn(" ".join(sys.argv))
+    Logger().warn("%s (running as %s)"%(" ".join(sys.argv), os.getpid()))
     if 'LANG' in os.environ:
         Logger().debug(os.environ['LANG'])
 
