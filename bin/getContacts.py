@@ -4,6 +4,7 @@ from flickr_download_helper.api import getContactList, initialisationFlickrApi, 
 from flickr_download_helper.config import OptConfigReader, OPT, OptReader
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.proxy import FDHProxySettings
+import os
 
 config = OptConfigReader()
 config.setup()
@@ -15,7 +16,7 @@ ret = opt.read('getContacts.py')
 ## start the logger
 Logger().setup()
 Logger().warn("#############################################################")
-Logger().warn("Getting contacts")
+Logger().warn("Getting contacts (running as %s)"%(os.getpid()))
 
 proxy = FDHProxySettings()
 proxy.setValues(OPT)
