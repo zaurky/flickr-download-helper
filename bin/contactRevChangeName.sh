@@ -4,7 +4,7 @@
 FDHPATH=$FLICKRDIR
 
 cat $FDHPATH/files/contacts_rev_name.new | sort > $FDHPATH/files/contacts_rev_name.old
-$FDHPATH/bin/getContacts.py --gcf nsid,username --acf | sort > $FDHPATH/files/contacts_rev_name.new
+$FDHPATH/bin/getContacts.py --gcf nsid,username | sort > $FDHPATH/files/contacts_rev_name.new
 
 diff $FDHPATH/files/contacts_rev_name.old $FDHPATH/files/contacts_rev_name.new | grep ' ' > $FDHPATH/files/contacts_rev_name.diff
 if [ `wc -l $FDHPATH/files/contacts_rev_name.diff | awk '{print $1}'` -ne 0 ]; then
