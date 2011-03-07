@@ -9,7 +9,7 @@ if [ -f $FLICKRDIR/log/fdhmail ]; then
     echo "###########################################" >> $FLICKRDIR/log/fdhmail.txt
     tail -n 25 $FLICKRDIR/files/contacts_rev_change_name | sed -e 's/^>/+/' | sed -e 's/^</-/' >> $FLICKRDIR/log/fdhmail.txt
 
-    cat $FLICKRDIR/log/fdhmail.txt | mail -s "FLICKR DOWNLOAD HELPER [$DATE]" belial9931@yssuor.org
+    cat $FLICKRDIR/log/fdhmail.txt | mail -s "FLICKR DOWNLOAD HELPER [$DATE]" "$MAIL"
     rm -f $FLICKRDIR/log/fdhmail.txt
 fi
 
