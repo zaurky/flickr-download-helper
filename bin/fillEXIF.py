@@ -14,7 +14,8 @@ api, token = flickr_download_helper.main_init(False)
 attr = sys.argv[1]
 Logger().debug("will work on %s"%attr)
 if os.path.isdir(attr):
-    os.path.walk(attr, fillDir, [api, token])
+    f = fillDir(api, token)
+    os.path.walk(attr, f.fillDir, [api, token])
 elif os.path.isfile(attr):
     fillFile(api, token, attr)
 

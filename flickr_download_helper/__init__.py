@@ -350,8 +350,7 @@ def main(api, token):
                 size = downloadPhotoFromURL(url, filename, existing)
                 if len(infos) != 0 and id in infos and size != 0:
                     try:
-                        #exif.fillFile(api, token, filename, info = infos[id])
-                        pass
+                        exif.fillFile(api, token, filename, info = infos[id])
                     except Exception, e:
                         print "exif.fillFile"
                         print filename
