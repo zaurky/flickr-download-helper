@@ -44,7 +44,7 @@ if user:
             style = 'border:1px blue solid;'
         page.img(src=urls[id], width=100, height=80, alt=id, onclick='alert("'+id+'");', style=style)
 else:
-    page.h3("showing last photos by your contacts")
+    page.h3("showing last photos of your contacts")
 
 #     params = {"contacts":"ff", "min_upload_date":"1287399869", "extra":"url_sq"}
 #     photos = searchPhotos(api, token, params)
