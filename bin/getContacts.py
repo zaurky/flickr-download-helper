@@ -26,6 +26,11 @@ proxy.activate()
 api, token = initialisationFlickrApi(OPT)
 
 
+def encode(string):
+    if not isinstance(string, (str, unicode)): return str(string)
+    try: return string.encode('latin1')
+    except: return string.encode('utf8')
+
 contacts = getContactList(api, token)
 for c in contacts:
     line = []
@@ -49,7 +54,7 @@ for c in contacts:
         print c['nsid']
     else:
         try:
-            print u"\t".join(map(unicode, line))
+            print "\t".join(map(encode, line))
         except:
             print line
 
