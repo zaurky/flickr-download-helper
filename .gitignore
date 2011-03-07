@@ -2,3 +2,6 @@
 token
 files
 *~
+bin/id
+bin/images*
+bin/photoset
