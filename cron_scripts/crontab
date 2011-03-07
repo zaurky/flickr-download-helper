@@ -35,4 +35,7 @@
 # demarre tous les jours a 5 heure du matin
 0 5 * * * /root/fdh/cron_scripts/flickrmail.cron
 
+# demarre toutes les heures moins 1 minute
+59 * * * * /root/fdh/bin/contactMail.sh
+
 ################################
