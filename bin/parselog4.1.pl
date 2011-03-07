@@ -6,9 +6,19 @@ use Term::ANSIColor;
 #use Text::Reform;
 use utf8;
 
+my $color = 1;
+my $html = 0;
 my $now;
 if (scalar @ARGV > 1) {
     $now = $ARGV[1];
+    if (scalar @ARGV > 2) {
+        if ($ARGV[2] eq 'NOCOLOR') {
+            $color = 0;
+        } elsif ($ARGV[2] eq 'HTML') {
+            $html = 1;
+            $color = 0;
+        }
+    }
 } else {
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
     $now = sprintf "%04d-%02d-%02d", ($year+1900, $mon+1, $mday);
@@ -104,17 +114,23 @@ foreach $username (sort keys %h_records) {
             }
         }
     }
-    if ($t_num == 0) {
-        print color "yellow";
-    } elsif ($today_num != 0) {
-        print color "red";
+    if (!$html) {
+      if ($t_num == 0) {
+        print color "yellow" if $color;
+      } elsif ($today_num != 0) {
+        print color "red" if $color;
+      }
+      if ($today_num > 20) {
+        print color "bold" if $color;
+      }
+      print "$username : $today_num (".($t_num+$today_num)."), $today_size (".($t_size+$today_size).")\n";
+      print color "reset" if $color;
+    } else {
+      if ($today_num > 20) {
+        print "*$username* : *$today_num* (".($t_num+$today_num)."), $today_size (".($t_size+$today_size).")\n";
+      } else {
+        print "$username : $today_num (".($t_num+$today_num)."), $today_size (".($t_size+$today_size).")\n";
+      }
     }
-    if ($today_num > 20) {
-        print color "bold";
-    }
-    # "| [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[ | num = [[[[ (total ]]]]]), size = [[[[[[[[[[[[ (total ]]]]]]]]]]]]]) |";
-    # print form $format, $username, $today_num, ($t_num+$today_num), $today_size, ($t_size+$today_size);
-    print "$username : $today_num (".($t_num+$today_num)."), $today_size (".($t_size+$today_size).")\n";
-    print color "reset";
 }
 
