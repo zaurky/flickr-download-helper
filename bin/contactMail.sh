@@ -5,9 +5,12 @@
 LOG="$FDHPATH/log/fdh.log"
 IDS=`cat $FDHPATH/files/id_to_mail`
 
+DATE=`date +%Y-%m-%d`
 HOUR=`date +%H`
 BUFFER="$TMPDIR/log.buffer.$HOUR"
-grep $HOUR $LOG > $BUFFER
+grep "$DATE $HOUR:" $LOG > $BUFFER
+
+# 2011-03-07 00:00:14,153 INFO
 
 OUTPUT=''
 
