@@ -30,7 +30,9 @@
 2 0 * * * tail fdh/log/fdh.log -f -n 300  -- | egrep '(WARNING|ERROR)' > /var/www/flickr/log &
 
 # demarre 4 fois par jour
-* */4 * * * /root/fdh/bin/contactRevChangeName.sh
+0 */4 * * * /root/fdh/bin/contactRevChangeName.sh
+
+# demarre tous les jours a 5 heure du matin
+0 5 * * * /root/fdh/cron_scripts/flickrmail.cron
 
 ################################
-
