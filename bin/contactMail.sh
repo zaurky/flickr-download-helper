@@ -2,6 +2,7 @@
 
 . /etc/fdh/fdh.sh
 
+FDHPATH=$FLICKRDIR
 LOG="$FDHPATH/log/fdh.log"
 IDS=`cat $FDHPATH/files/id_to_mail`
 
@@ -9,8 +10,6 @@ DATE=`date +%Y-%m-%d`
 HOUR=`date +%H`
 BUFFER="$TMPDIR/log.buffer.$HOUR"
 grep "$DATE $HOUR:" $LOG > $BUFFER
-
-# 2011-03-07 00:00:14,153 INFO
 
 OUTPUT=''
 
@@ -23,7 +22,7 @@ for ID in $IDS; do
   fi
 done
 
-SOMETHING=`echo -e "$OUTPUT" | wc -l`
+SOMETHING=`echo -e "$OUTPUT" | wc -w`
 if [ $SOMETHING -gt 0 ]; then
     echo -e "$OUTPUT" | mail -s "FLICKR CHECK" "$MAIL"
 fi
