@@ -8,8 +8,8 @@
 # demarre toutes les heures sauf a minuit
 0 1-23 * * * /root/fdh/cron_scripts/flickr.cron
 
-# demarre toutes les 30 minutes
-*/30 * * * * /root/fdh/cron_scripts/flickr_generate_thumbs.cron
+# demarre toutes les 15 minutes
+*/15 * * * * /root/fdh/cron_scripts/flickr_generate_thumbs.cron
 
 # demarre a minuit tous les jours
 0 0 * * * /root/fdh/cron_scripts/flickr.daily
@@ -27,7 +27,8 @@
 
 # demarre tous les jours a minuit + 1
 1 0 * * * killall tail
-2 0 * * * tail fdh/log/fdh.log -f -n 300  -- | egrep '(WARNING|ERROR)' > /var/www/flickr/log &
+2 0 * * * tail /root/fdh/log/fdh.log -f -n 300  -- | egrep '(WARNING|ERROR)' > /var/www/flickr/log &
+2 0 * * * tail -f /root/fdh/log/fdh.log -n 300 | egrep 'got .* files' | tail -f > /var/www/flickr/download &
 
 # demarre 4 fois par jour
 0 */4 * * * /root/fdh/bin/contactRevChangeName.sh
