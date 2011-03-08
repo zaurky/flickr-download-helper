@@ -5,6 +5,7 @@ export LANG='fr_FR.UTF-8'
 
 TIMESTAMP="$FLICKRDIR/log/timestamp.cron"
 OPTIONS=" -d -r "
+TAG=`date +%s`
 
 if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
     if [ -f $TIMESTAMP ]; then
@@ -22,8 +23,9 @@ if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]
     cd $FLICKRDIR
     rm -f $FLICKRDIR/log/cron.std*
 
-    python /usr/bin/flickr_download_helper_contacts.py  $OPTIONS >> $FLICKRDIR/log/cron.stdout 2>> $FLICKRDIR/log/cron.stderr
+    python /usr/bin/flickr_download_helper_contacts.py  $OPTIONS >> $FLICKRDIR/log/cron.stdout.$TAG 2>> $FLICKRDIR/log/cron.stderr.$TAG
 #    for u in `/usr/bin/getContacts.py`; do
 #        python /usr/bin/flickr_download_helper.py --nick "$u" $OPTIONS >> $FLICKRDIR/log/cron.stdout 2>> $FLICKRDIR/log/cron.stderr
 #    done
+    rm -f $FLICKRDIR/log/cron.stdout.$TAG $FLICKRDIR/log/cron.stderr.$TAG
 fi
