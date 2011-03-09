@@ -68,7 +68,10 @@ class FileLogger(Singleton):
         self.internal.info(self.treatLabel(label))
 
     def print_tb(self, label):
-        self.internal.error(traceback.format_tb(label))
+        try:
+            self.internal.error(traceback.format_tb(label))
+        except AttributeError:
+            self.internal.error("Can't get traceback")
 
 
 ########################################################
