@@ -47,3 +47,5 @@ for i in `cat $TMPDIR/fdh.thumbgen.files.$TAG | sed -e 's| |##|g'`; do
     fi
     echo `basename "$FILE"` >> "$THUMBDIR/$DATE.files"
 done
+
+rm -f $TMPDIR/fdh.thumbgen.dirs.$TAG $TMPDIR/fdh.thumbgen.dirs.$TAG
