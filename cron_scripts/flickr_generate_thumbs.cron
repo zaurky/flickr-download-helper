@@ -3,8 +3,16 @@
 export LANG='fr_FR.UTF-8'
 . /etc/fdh/fdh.sh
 
+LOCKFILE="$TMPDIR/flickr_generate_thumbs.cron.lock"
+if [ -f "$LOCKFILE" ]; then
+    exit
+fi
+touch "$LOCKFILE"
+
 DATE=`date +%Y%m%d`
 
 if [ "x$DISABLE" == "x" ] && [ -d "$NEWS_DIR" ] && [ -d "$THUMBDIR" ]; then
     /usr/bin/flickr_create_news_thumbnail.sh $DATE
 fi
+
+rm -f "$LOCKFILE"
