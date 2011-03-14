@@ -7,7 +7,8 @@ if [ -f $FLICKRDIR/log/fdhmail ]; then
     FDATE=`perl -e '$a="'$DATE'"; $a =~ s/(....)(..)(..)/$1-$2-$3/; print $a;'`
     perl $FLICKRDIR/bin/parselog4.1.pl $FLICKRDIR/log/fdh.log.$DATE.0 $FDATE HTML | grep -v "< $DATE" > $FLICKRDIR/log/fdhmail.txt
     echo "###########################################" >> $FLICKRDIR/log/fdhmail.txt
-    tail -n 25 $FLICKRDIR/files/contacts_rev_change_name | sed -e 's/^>/+/' | sed -e 's/^</-/' >> $FLICKRDIR/log/fdhmail.txt
+    USDATE=`LANG=us; date +"%a %b %d" -d yesterday`
+    grep "$USDATE" -A 500 $FLICKRDIR/files/contacts_rev_change_name | sed -e 's/^>/+/' | sed -e 's/^</-/' >> $FLICKRDIR/log/fdhmail.txt
 
     cat $FLICKRDIR/log/fdhmail.txt | mail -s "FLICKR DOWNLOAD HELPER [$DATE]" "$MAIL"
     rm -f $FLICKRDIR/log/fdhmail.txt
