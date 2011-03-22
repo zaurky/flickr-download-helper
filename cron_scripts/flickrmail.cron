@@ -11,7 +11,7 @@ if [ -f $FLICKRDIR/log/fdhmail ]; then
     grep "$USDATE" -A 500 $FLICKRDIR/files/contacts_rev_change_name | sed -e 's/^>/+/' | sed -e 's/^</-/' >> $FLICKRDIR/log/fdhmail.txt
 
     cat $FLICKRDIR/log/fdhmail.txt | mail -s "FLICKR DOWNLOAD HELPER [$DATE]" "$MAIL"
-    rm -f $FLICKRDIR/log/fdhmail.txt
+    mv $FLICKRDIR/log/fdhmail.txt $MAILCACHE/fdhmail.txt.$DATE
 fi
 
 date +"%Y%m%d" > $FLICKRDIR/log/fdhmail

@@ -25,6 +25,7 @@ done
 SOMETHING=`echo -e "$OUTPUT" | wc -w`
 if [ $SOMETHING -gt 0 ]; then
     echo -e "$OUTPUT" | mail -s "FLICKR CHECK" "$MAIL"
+    echo -e "$OUTPUT" > $MAILCACHE/fdhmail.hourly.$DATE.$HOUR
 fi
 rm -f $BUFFER
 
