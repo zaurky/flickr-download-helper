@@ -231,7 +231,7 @@ def main(api, token):
             for group in groups[0:200]:
                 Logger().info("\n== getting group %s (%s)"%(group['name'], group['nsid']))
                 if OPT.force_group_verbose:
-                    l_photos = getGroupPhotos(api, token, group['nsid'])
+                    l_photos = getGroupPhotos(api, token, group['nsid'], user_id = user_id)
                     count = 0
                     for l_photo in l_photos:
                         if l_photo['owner_name'] == user_name:
@@ -375,7 +375,8 @@ def main(api, token):
                 OPT.has_been_download[user_name] = [total, total_size]
             Logger().warn("download %i file for %i octets"%(total, total_size))
 
-    if existing:
+    if existing and len(urls) > 0:
+        # we only save photo cache when something has been downloaded
         existing.backupToFile()
     Logger().info("\n== end")
     return (0, total)

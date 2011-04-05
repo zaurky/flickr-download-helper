@@ -231,7 +231,7 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None):
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
-    if len(content)%100 != 0:
+    if int(len(content) + (page-1)*100) < int(rsp_json['photos']['total']):
         next = getGroupPhotos(api, token, group_id, page = page+1, user_id = user_id)
         content.extend(next)
     return content
@@ -390,6 +390,7 @@ def getContactList(api, token, page = 1):
     rsp_json = json_request(api, token, 'flickr.contacts.getList', 'error while getting the contact list (%s)', [], page=page)
     if not rsp_json: return []
 
+    if 'contact' not in rsp_json['contacts']: return []
     content = rsp_json['contacts']['contact']
     if int(len(content) + (page-1)*100) != int(rsp_json['contacts']['total']):
         next = getContactList(api, token, page+1)
@@ -571,6 +572,7 @@ def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id,
                 else:
                     raise e
             else:
+                Logger().error("while doing stuffs in %s"%destination)
                 info = sys.exc_info()
                 Logger().error(str(e))
                 Logger().print_tb(info[2])
