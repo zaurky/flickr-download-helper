@@ -1,0 +1,15 @@
+#!/bin/sh
+
+export LANG='fr_FR.UTF-8'
+. /etc/fdh/fdh.sh
+
+OPTIONS=" -d -r --dw"
+
+WORKINGON="$FILESDIR/urls"
+
+if [ "x$DISABLE" == "x" ] && [ -d "$FLICKRPHOTODIR" ] && [ -f "$WORKINGON" ]; then
+    rm -f $FLICKRDIR/log/cron_url.std*
+    for url in `cat "$WORKINGON"`; do
+        python /usr/bin/flickr_download_helper.py $OPTIONS --get_url "$url" >> $FLICKRDIR/log/cron_url.stdout 2>> $FLICKRDIR/log/cron_url.stderr
+    done
+fi
