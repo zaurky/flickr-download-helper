@@ -24,7 +24,12 @@ done
 
 SOMETHING=`echo -e "$OUTPUT" | wc -w`
 if [ $SOMETHING -gt 0 ]; then
-    echo -e "$OUTPUT" | mail -s "FLICKR CHECK" "$MAIL"
+    if [ `echo -e $OUTPUT | wc -l` -eq 2 ]; then
+        NAME=`echo -e $OUTPUT | sed -e 's/^[0-9@N]* //'`
+        echo -e "$OUTPUT" | mail -s "FLICKR CHECK [$NAME]" "$MAIL"
+    else
+        echo -e "$OUTPUT" | mail -s "FLICKR CHECK" "$MAIL"
+    fi
     echo -e "$OUTPUT" > $MAILCACHE/fdhmail.hourly.$DATE.$HOUR
 fi
 rm -f $BUFFER
