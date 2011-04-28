@@ -548,10 +548,18 @@ def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id,
         Logger().info("\n== prepare the photo directory")
         try:
             destination = os.path.join(opt.photo_dir, user_name)
-            if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+            try:
+                if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+            except Exception, e:
+                Logger().warn(destination)
+                raise e
             if "/" in photoset_name: photoset_name = photoset_name.replace('/', '')
             destination = os.path.join(destination, photoset_name)
-            if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+            try:
+                if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+            except Exception, e:
+                Logger().warn(destination)
+                raise e
         except OSError, e:
             if e.errno == 28:
                 ret = waitFor("there is not enough space to continue, please delete some files and try again")

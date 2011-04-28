@@ -58,7 +58,13 @@ def main_init(read_command_line = True):
 #    Existing().restoreFromFile()
 
     # init of the flickr api
-    api, token = initialisationFlickrApi(OPT)
+    r = initialisationFlickrApi(OPT)
+    if not isinstance(r, (list, tuple)) or len(r) != 2:
+        if r != 6:
+            Logger().error("Couldn't init flickr api")
+            Logger().error(r)
+        raise Exception("Couldn't init flickr api %s"%(str(r)))
+    api, token = r
     return (api, token)
 
 def main(api, token):
@@ -254,7 +260,11 @@ def main(api, token):
             urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
             if '/' in user_name: user_name = user_name.replace("/", "##")
             destination = os.path.join(OPT.photo_dir, user_name)
-            if OPT.retrieve and not os.path.exists(destination): os.mkdir(destination)
+            try:
+                if OPT.retrieve and not os.path.exists(destination): os.mkdir(destination)
+            except Exception, e:
+                Logger().warn(destination)
+                raise e
         elif OPT.tags or OPT.group_id:
             if OPT.tags:
                 Logger().info("\n== getting photos in tag %s"%OPT.tags)
