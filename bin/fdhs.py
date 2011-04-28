@@ -30,7 +30,8 @@ def getContactsPhotos(api, token):
     contacts_ids = getStaticContactList()
     Logger().info("static contacts %s"%(str(contacts_ids)))
     for c in contacts:
-        contacts_ids.append(c['nsid'])
+        if c['nsid'] != '52256782@N02': # TODO put the rejected in the conf file
+            contacts_ids.append(c['nsid'])
 
     for contacts_id in contacts_ids:
         Logger().debug("Contact : %s"%contacts_id)
@@ -40,7 +41,11 @@ def getContactsPhotos(api, token):
         try:
             ret, count = flickr_download_helper.main(api, token)
             if ret != 0:
-                Logger().error("getting %s failed (1: %s)"%(OPT.user_id, ret))
+                if ret == 4:
+                    # failed to find user, maybe next time!
+                    pass
+                else:
+                    Logger().error("getting %s failed (1: %s)"%(OPT.user_id, ret))
             if OPT.smart and count == 0:
                 if failure_level == 0:
                     # and OPT.user_id not in OPT.not_smart:
@@ -49,12 +54,12 @@ def getContactsPhotos(api, token):
                 failure_level -= 1
         except Exception, e:
             Logger().print_tb(e)
-            if hasattr(e, 'strerror'):
+            if hasattr(e, 'strerror') and e.strerror is not None and e.strerror != '':
                 Logger().error("getting %s failed (2: %s)"%(OPT.user_id, e.strerror))
-            elif hasattr(e, 'message'):
+            elif hasattr(e, 'message') and e.message is not None and e.message != '':
                 Logger().error("getting %s failed (3: %s)"%(OPT.user_id, e.message))
             else:
-                Logger().error("getting %s failed"%(OPT.user_id))
+                Logger().error("getting %s failed %s"%(OPT.user_id, str(e)))
 
     users = ', '.join(OPT.has_been_download.keys())
 
@@ -77,7 +82,12 @@ def getContactsPhotos(api, token):
 
 if __name__ == "__main__":
     try:
-        api, token = flickr_download_helper.main_init()
+        r = flickr_download_helper.main_init()
+        if not isinstance(r, (list, tuple)):
+            if r == 6:
+                sys.exit(-4)
+            sys.exit(-5)
+        api, token = r
         Logger().debug("#######################################")
     except Exception, e:
         info = sys.exc_info()
