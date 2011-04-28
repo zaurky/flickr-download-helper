@@ -3,8 +3,22 @@
 . /etc/fdh/fdh.sh
 FDHPATH=$FLICKRDIR
 
+LOCKFILE=$TMPDIR/contactRevChange.sh.lock
+
+if [ -f "$LOCKFILE" ]; then
+    exit
+fi
+
+touch "$LOCKFILE"
+
 cat $FDHPATH/files/contacts_rev.new | sort > $FDHPATH/files/contacts_rev.old
 $FDHPATH/bin/getContacts.py --gcf nsid,revcontact,revfriend,revfamily --acf | sort > $FDHPATH/files/contacts_rev.new
+
+if [ ! -s $FDHPATH/files/contacts_rev.new ]; then
+    mv $FDHPATH/files/contacts_rev.old $FDHPATH/files/contacts_rev.new
+    rm -f "$LOCKFILE"
+    exit
+fi
 
 diff $FDHPATH/files/contacts_rev.old $FDHPATH/files/contacts_rev.new | grep ' ' > $FDHPATH/files/contacts_rev.diff
 if [ `wc -l $FDHPATH/files/contacts_rev.diff | awk '{print $1}'` -ne 0 ]; then
@@ -20,3 +34,4 @@ if [ `wc -l $FDHPATH/files/contacts_rev.diff | awk '{print $1}'` -ne 0 ]; then
 fi
 rm -f $FDHPATH/files/contacts_rev.diff $FDHPATH/files/contacts_rev.old
 
+rm -f "$LOCKFILE"
