@@ -3,7 +3,6 @@ use strict;
 use warnings;
 
 use Term::ANSIColor;
-#use Text::Reform;
 use utf8;
 
 my $color = 1;
@@ -29,8 +28,6 @@ binmode STDOUT, ':utf8';
 my $username = '';
 my $date = '';
 my $message = '';
-
-#my $format = "| [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[ | num = [[[[ (total ]]]]]), size = [[[[[[[[[[[[ (total ]]]]]]]]]]]]]) |";
 
 my %h_id2username = ();
 my %h_records = ();
@@ -115,21 +112,17 @@ foreach $username (sort keys %h_records) {
         }
     }
     if (!$html) {
-      if ($t_num == 0) {
-        print color "yellow" if $color;
-      } elsif ($today_num != 0) {
-        print color "red" if $color;
-      }
+      print color "yellow" if $color;
       if ($today_num > 20) {
         print color "bold" if $color;
       }
-      print "$username : $today_num (".($t_num+$today_num)."), $today_size (".($t_size+$today_size).")\n";
+      print "$username : ".($t_num+$today_num).", ".($t_size+$today_size)."\n";
       print color "reset" if $color;
     } else {
       if ($today_num > 20) {
-        print "*$username* : *$today_num* (".($t_num+$today_num)."), $today_size (".($t_size+$today_size).")\n";
+        print "*$username* : *".($t_num+$today_num)."*, ".($t_size+$today_size)."\n";
       } else {
-        print "$username : $today_num (".($t_num+$today_num)."), $today_size (".($t_size+$today_size).")\n";
+        print "$username : ".($t_num+$today_num).", ".($t_size+$today_size)."\n";
       }
     }
 }
