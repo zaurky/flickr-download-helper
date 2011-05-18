@@ -109,7 +109,10 @@ class LogJabberBot(JabberBot):
                             self.line[timestamp] = ("video : %s"%(m.group(2)), 3)
 
                 time.sleep(1)
+<<<<<<< HEAD:flickr_download_helper/jabber.py
             self.finish()
+=======
+>>>>>>> jabber client to tell what is downloaded:flickr_download_helper/jabber.py
         except Exception, e:
             self.log(e)
             return
