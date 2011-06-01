@@ -8,6 +8,19 @@ import os
 
 from flickr_download_helper.config import OptConfigReader, OPT
 
+class HiJabberBot(JabberBot):
+    def __init__(self, jid, password, to_user, res = None):
+        super(HiJabberBot, self).__init__(jid, password, res)
+
+        self.config = OptConfigReader()
+        self.config.setup()
+
+        self._to_user = to_user
+
+    @botcmd
+    def hello(self, msg, attr):
+        self.send(self._to_user, 'hello')
+
 
 class LogJabberBot(JabberBot):
     thread_killed = False
@@ -131,8 +144,11 @@ class LogJabberBot(JabberBot):
 
     
     @botcmd
-    def level(self, mess, args):
+    def level(self, mess, args = ''):
         level = str(args)
+        if args == '':
+            self.log('log level = %s'%(level))
+            return
         if level not in self.possible_levels:
             self.log('log level %s invalid'%(level))
             self.send(self._to_user, 'log level %s invalid'%(level))
@@ -203,10 +219,21 @@ class LogJabberBot(JabberBot):
         self.send(self._to_user, 'pause %s'%self._pause)
         self.send(self._to_user, 'log level %s'%self.log_level)
 
+write_to = 'AAA@gmail.com'
+
 username = 'ZZZ@jabber.org'
 password = 'ZZZ'
 
-bot = LogJabberBot(username, password, 'AAA@gmail.com') 
+#bot_hi = HiJabberBot(username, password, write_to)
+#th = threading.Thread(target = bot_hi.serve_forever)
+#th.start()
+
+##########################################
+
+username = 'XXX@jabber.org'
+password = 'XXX'
+
+bot = LogJabberBot(username, password, write_to)
 
 th = threading.Thread(target = bot.thread_proc)
 bot.serve_forever(connect_callback = lambda: th.start())
