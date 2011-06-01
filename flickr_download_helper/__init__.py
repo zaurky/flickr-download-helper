@@ -25,7 +25,9 @@ from flickr_download_helper.config import OptReader, OPT, OptConfigReader
 from flickr_download_helper.proxy import FDHProxySettings
 from flickr_download_helper.existing import Existing #, FileWrite
 from flickr_download_helper.logger import Logger
+from flickr_download_helper.downloads_file import DownloadFile
 from flickr_download_helper import exif
+import datetime
 # from flickr_download_helper.database import SaveAll
 
 def main_init(read_command_line = True):
@@ -384,6 +386,7 @@ def main(api, token):
             if hasattr(OPT, 'has_been_download') and user_name != None:
                 OPT.has_been_download[user_name] = [total, total_size]
             Logger().warn("download %i file for %i octets"%(total, total_size))
+            DownloadFile().write("%s %s %s"%(str(datetime.datetime.now()), total, user_name))
 
     if existing and len(urls) > 0:
         # we only save photo cache when something has been downloaded
