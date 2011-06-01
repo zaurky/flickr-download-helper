@@ -5,6 +5,7 @@ all the flickr_download_helper functions
 from flickr_download_helper.config import OPT
 from flickr_download_helper.existing import Existing, FileWrite
 from flickr_download_helper.logger import Logger
+from flickr_download_helper.downloads_file import DownloadFile
 from flickr_download_helper.utils import waitFor
 import Flickr.API
 import xml.etree.ElementTree
@@ -15,6 +16,7 @@ import marshal
 import simplejson
 import urllib2
 import httplib
+import datetime
 
 def saveToken(token, token_file):
     # put the token in the configuration directory
@@ -312,6 +314,7 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb = False):
                     if 'media' in photo and photo['media'] != 'photo':
                         url = selectMediaURL(sizes, photo['media'])
                         Logger().info("Get the video %s"%(url))
+                        DownloadFile().write("%s video %s"%(str(datetime.datetime.now()), url))
                         #url = getVideoURL(photo)
                         #Logger().info("Download %s"%(url))
                     else:
