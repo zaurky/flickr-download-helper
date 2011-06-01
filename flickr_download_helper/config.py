@@ -69,6 +69,8 @@ class Options(Singleton):
     group_id = None
     try_from_groups = False
     force_group_verbose = False
+    downloads_file = None
+    jabber_last = None
 
     user_hash = {}
 
@@ -120,6 +122,10 @@ class OptConfigReader(Singleton):
                 self.opt.existing_ids_file = self.cp.get("path", "existing_ids_file")
             if self.cp.has_option("path", "files_dir"):
                 self.opt.files_dir = self.cp.get("path", "files_dir")
+            if self.cp.has_option("path", "downloads_file"):
+                self.opt.downloads_file = self.cp.get("path", "downloads_file")
+            if self.cp.has_option("path", "jabber_last"):
+                self.opt.jabber_last = self.cp.get("path", "jabber_last")
 
         # get proxy options
         if self.cp.has_section("proxy"):
