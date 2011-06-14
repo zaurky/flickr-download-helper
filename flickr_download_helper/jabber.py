@@ -79,11 +79,12 @@ class LogJabberBot(JabberBot):
             if level > self.log_level:
                 if self.display_date:
                     message = "%s %s"%(
-                        timestamp.strftime('%Y%m%d %H:%M:%S'),
+                        timestamp.strftime('%m%d %H:%M'),
                         message
                     )
                 self.log('sending "%s".' % (message))
                 self.send(self._to_user, message)
+                time.sleep(1)
             else:
                 self.log('not sending "%s" (ll %s)'%(message, level))
 
@@ -230,13 +231,20 @@ password = 'ZZZ'
 
 ##########################################
 
+def serve(username, password, write_to):
+    bot = LogJabberBot(username, password, write_to)
+    th = threading.Thread(target = bot.thread_proc)
+    try:
+        bot.serve_forever(connect_callback = lambda: th.start())
+        bot.thread_killed = True
+        return False
+    except IOError, e:
+        bot.thread_killed = True
+        bot.finish()
+        return True
+
 username = 'XXX@jabber.org'
 password = 'XXX'
 
-bot = LogJabberBot(username, password, write_to)
-
-th = threading.Thread(target = bot.thread_proc)
-bot.serve_forever(connect_callback = lambda: th.start())
-bot.thread_killed = True
-bot.finish()
+while serve(username, password, write_to): pass
 
