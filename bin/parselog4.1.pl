@@ -87,8 +87,6 @@ while (<FILE>) {
 }
 close FILE;
 
-use Data::Dumper;
-
 foreach $username (sort keys %h_records) {
     my $today;
     my $t_num = 0;
