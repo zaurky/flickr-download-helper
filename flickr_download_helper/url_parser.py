@@ -29,6 +29,9 @@ class UrlParser:
                 # should be a user's profile
                 print "profile of user %s"%a_url[4]
                 return (FDHPR.PROFILE, a_url[4])
+            elif a_url[3] == 'groups':
+                print "group %s"%a_url[4]
+                return (FDHPR.GROUP, a_url[4])
         elif len(a_url) == 6:
             if a_url[3] == 'photos' and a_url[5] == 'sets':
                 print "photosets in account %s"%( a_url[4])
@@ -37,6 +40,9 @@ class UrlParser:
                 # should be a picture in a flickr account
                 print "photo %s in account %s"%(a_url[5], a_url[4])
                 return (FDHPR.PHOTO, a_url[4], a_url[5])
+            elif a_url[3] == 'groups':
+                print "group %s"%a_url[4]
+                return (FDHPR.GROUP, a_url[4])
             
         elif len(a_url) == 7:
             if a_url[3] == 'photos' and a_url[5] == 'collections':
@@ -50,6 +56,9 @@ class UrlParser:
             elif a_url[3] == 'photos' and a_url[5] == 'tags':
                 print "tag %s %s"%(a_url[4], a_url[6])
                 return (FDHPR.TAG, a_url[4], a_url[6])
+            elif a_url[3] == 'groups' and a_url[5] == 'pool':
+                print "user %s in groups %s"%(a_url[6], a_url[4])
+                return (FDHPR.INGROUP, a_url[6], a_url[4])
         return (FDHPR.ERROR)
 
 

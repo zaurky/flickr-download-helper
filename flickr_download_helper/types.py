@@ -12,6 +12,8 @@ class FlickrDownloadHelperParserResponse:
     PROFILE = 5
     PHOTOSETS = 6
     TAG = 7
+    GROUP = 8
+    INGROUP = 9
 
     ERROR = 10
     ERROR_NOURL = 11

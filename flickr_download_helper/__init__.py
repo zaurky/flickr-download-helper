@@ -17,7 +17,7 @@ from flickr_download_helper.api import getPhotoInfo, getUserPhotos, getUserGroup
 from flickr_download_helper.api import getPhotoURLFlickr, getPhotosetInfos, getUserFromID, getUserPhotosets, getGroupPhotos
 from flickr_download_helper.api import getUserFromUsername, getUserFromUrl, getUserFromNick, readFile, downloadPhotoFromURL, getPhotosByTag
 from flickr_download_helper.api import backupUser, restoreUser, initialisationFlickrApi
-from flickr_download_helper.api import getPhotoset, getCollectionPhotosets, getContactsPhotos
+from flickr_download_helper.api import getPhotoset, getCollectionPhotosets, getContactsPhotos, searchGroup
 from flickr_download_helper.url_parser import UrlParser
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.utils import extends
@@ -90,6 +90,7 @@ def main(api, token):
             os.mkdir(OPT.daily_in_dir)
 
     if OPT.get_url:
+        Logger().info("\n== retrieve from URL")
         url = UrlParser(OPT.get_url).parse()
         if '@' in url[1]:
             OPT.user_id = url[1]
@@ -113,6 +114,11 @@ def main(api, token):
             Logger().warn("I don't know what to do with that! %s"%(OPT.get_url))
         elif url[0] == FDHPR.PHOTOSETS:
             OPT.sort_by_photoset = True
+        elif url[0] == FDHPR.GROUP:
+            Logger().error("Don't know how to get group")
+        elif url[0] == FDHPR.INGROUP:
+            group = searchGroup(api, token, url[2])
+            OPT.group_id = group['id']
         elif url[0] in (FDHPR.ERROR, FDHPR.ERROR_NOURL, FDHPR.ERROR_NOTFLICKR):
             OPT.url = None
             OPT.user_id = None
