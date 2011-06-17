@@ -130,6 +130,8 @@ class Existing():
         return ret
 
     def grepPhotosDontExists(self, photos):
+        if self.user_id in OPT.check_md5:
+            return photos
         ret = []
         for photo in photos:
             if not self.exists(photo['id']): ret.append(photo)

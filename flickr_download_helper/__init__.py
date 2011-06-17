@@ -26,7 +26,6 @@ from flickr_download_helper.proxy import FDHProxySettings
 from flickr_download_helper.existing import Existing #, FileWrite
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
-from flickr_download_helper import exif
 import datetime
 # from flickr_download_helper.database import SaveAll
 
@@ -40,8 +39,6 @@ def main_init(read_command_line = True):
         if ret != 0: return ret
 
     Logger().setup()
-    #os.close(sys.stdout.fileno())
-    #os.close(sys.stderr.fileno())
 
     Logger().warn("####################################################################")
     Logger().warn("%s (running as %s)"%(" ".join(sys.argv), os.getpid()))
@@ -55,9 +52,6 @@ def main_init(read_command_line = True):
     # init of the log all database
 #    logall_db = SaveAll()
 #    logall_db.init()
-
-#    FileWrite().init()
-#    Existing().restoreFromFile()
 
     # init of the flickr api
     r = initialisationFlickrApi(OPT)
@@ -355,35 +349,39 @@ def main(api, token):
     total = 0
     count_url = len(urls.keys())
     Logger().info("sort_by_user %s"%str(OPT.sort_by_user))
-    for id in urls:
-        url = urls[id]
+    for id, url in urls.items():
         if OPT.retrieve:
             if OPT.sort_by_user:
                 destination = photo_id2destination[id]
             filename = os.path.join(destination, os.path.basename(url))
+            info = None
+            if len(infos) != 0 and id in infos:
+                info = infos[id]
             if os.path.exists(filename) and not OPT.force:
-                Logger().info("%s> already exists (%s)" % (id, filename))
-                count_url -= 1
+                if OPT.user_id and OPT.user_id in OPT.check_md5:
+                    # TODO check the md5 or the size for users in OPT.check_md5:
+                    Logger().info("%s> check %s"% (id, filename))
+                    size = downloadPhotoFromURL(url, filename, existing, True, info = info)
+                    if size == 0:
+                        Logger().info("%s> is the same"%(id))
+                        count_url -= 1
+                    else:
+                        Logger().info("%s> got a new one"%(id))
+                        total_size += size
+                        total += 1
+                        Logger().info("%i/%i %s : %i"%(total, count_url, id, size))
+                        time.sleep(OPT.sleep_time)
+                else:
+                    Logger().info("%s> already exists (%s)" % (id, filename))
+                    count_url -= 1
             else:
-                size = downloadPhotoFromURL(url, filename, existing)
-                if len(infos) != 0 and id in infos and size != 0:
-                    try:
-                        exif.fillFile(api, token, filename, info = infos[id])
-                    except Exception, e:
-                        print "exif.fillFile"
-                        print filename
-                        print id
-                        print infos
-                        print infos[id]
-                        print e
-                        print dir(e)
-                        print e.message
+                size = downloadPhotoFromURL(url, filename, existing, info = info)
                 total_size += size
                 total += 1
                 Logger().info("%i/%i %s : %i"%(total, count_url, id, size))
                 time.sleep(OPT.sleep_time)
         else:
-            Logger().info("%s> %s" % (id, urls[id]))
+            Logger().info("%s> %s" % (id, url))
     if not OPT.sort_by_user: Logger().info(destination)
     if OPT.retrieve:
         if total == 0:

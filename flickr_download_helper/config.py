@@ -66,6 +66,7 @@ class Options(Singleton):
     loop = None
     smart = False
     not_smart = []
+    check_md5 = []
     group_id = None
     try_from_groups = False
     force_group_verbose = False
@@ -97,6 +98,8 @@ class OptConfigReader(Singleton):
 
             if self.cp.has_option("main", "not_smart"):
                 self.opt.not_smart = self.cp.get("main", "not_smart").split(',')
+            if self.cp.has_option("main", "check_md5"):
+                self.opt.check_md5 = self.cp.get("main", "check_md5").split(',')
             if self.cp.has_option("main", "logger"):
                 self.opt.logger = self.cp.get("main", "logger")
             if self.cp.has_option("main", "sleep_time"):

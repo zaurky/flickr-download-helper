@@ -1,6 +1,9 @@
 #!/usr/bin/python
 
-from flickr_download_helper.api import getPhotoInfo
+try:
+    from flickr_download_helper.api import getPhotoInfo
+except:
+    pass
 from flickr_download_helper.logger import Logger
 import pyexiv2
 import os

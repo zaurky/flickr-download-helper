@@ -7,11 +7,14 @@ from flickr_download_helper.existing import Existing, FileWrite
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
 from flickr_download_helper.utils import waitFor
+from flickr_download_helper import exif
 import Flickr.API
 import xml.etree.ElementTree
 import sys
 # import traceback
 import os
+import re
+import md5
 import marshal
 import simplejson
 import urllib2
@@ -571,7 +574,7 @@ def readFile(filename):
         Logger().error("file not found %s"%filename)
     return None
 
-def downloadPhotoFromURL(url, filename, existing = None):
+def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, info = None):
     content = None
     try:
         content = urllib2.urlopen(url).read()
@@ -587,7 +590,39 @@ def downloadPhotoFromURL(url, filename, existing = None):
             Logger().error("while downloading the file from %s (e: %s)"%(url, str(e)))
 
     if content == None: return 0
+
+    old_filename = filename
+    if os.path.exists(filename):
+        index = 0
+        while os.path.exists(filename):
+            index += 1
+            f = re.split('\.', filename)
+            if index == 1:
+                f.insert(len(f)-1, str(index))
+            else:
+                f[len(f)-2] = str(index)
+            filename = '.'.join(f)
+
     FileWrite().write(filename, content, existing)
+    if info:
+        exif.fillFile(None, None, filename, info = info)
+
+    if check_exists and old_filename != filename:
+        # read old content
+        f = open(old_filename, 'rb')
+        old_content = f.read()
+        f.close()
+
+        f = open(filename, 'rb')
+        content = f.read()
+        f.close()
+
+        if len(old_content) == len(content):
+            # get md5
+            if md5.new(old_content).digest() == md5.new(content).digest():
+                # if the 2 files are the same
+                os.unlink(filename)
+                return 0
 
     if OPT.new_in_dir and type(OPT.new_in_dir) != bool:
         link_dest = os.path.join(OPT.new_in_dir, os.path.basename(filename))
