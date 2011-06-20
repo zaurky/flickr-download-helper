@@ -198,6 +198,7 @@ def main(api, token):
             Logger().error("can't find user")
             return (4, 0)
 
+        OPT.user_id = user['id']
         OPT.user_hash[OPT.user_id] = user
 
         # getting user's informations
