@@ -177,7 +177,7 @@ def json_request2(api, token, method, **kargs):
         message_params = kargs['message_params']
 
     if 'content_type' in kargs:
-        kargs['extras'] = 'media, url_sq, url_t, url_s, url_m, url_l, url_o, url_z, date_upload, owner_name'
+        kargs['extras'] = 'media, url_sq, url_t, url_s, url_m, url_l, url_o, url_z, date_upload, owner_name, last_update'
 
     if not token:
         request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, **kargs)
@@ -239,7 +239,7 @@ def json_request(api, token, method, message, message_params, photo_id=None, pag
     if not content_type:
         request.args.pop('content_type')
     else:
-        request.args['extras'] = 'media, url_sq, url_t, url_s, url_m, url_l, url_o, url_z, date_upload, owner_name'
+        request.args['extras'] = 'media, url_sq, url_t, url_s, url_m, url_l, url_o, url_z, date_upload, owner_name, last_update'
     request_args = request.args.copy()
     for i in ('auth_token', 'format', 'nojsoncallback', 'method'):
         if i in request_args:
@@ -576,7 +576,11 @@ def readFile(filename):
 
 def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, info = None):
     if not check_exists and os.path.exists(filename):
-        Logger().info("%s exists")
+        Logger().info("%s exists"%info['id'])
+        return 0
+
+    if os.path.exists(filename) and info and existing and not existing.isYounger(info['id'], info['lastupdate']):
+        Logger().info("%s exists"%info['id'])
         return 0
 
     content = None
@@ -615,7 +619,6 @@ def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, i
         exif.fillFile(None, None, filename, info = info)
 
     if check_exists and old_filename != filename:
-
         f = open(filename, 'rb')
         content = f.read()
         f.close()
@@ -635,7 +638,6 @@ def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, i
                 if md5.new(old_content).digest() == new_md5:
                     # if the 2 files are the same
                     os.unlink(filename)
-                    print "%s same as %s"%(old_filename, filename)
                     return 0
 
     if OPT.new_in_dir and type(OPT.new_in_dir) != bool:

@@ -42,7 +42,11 @@ class FileWrite(Singleton):
 
 
 class Existing():
-    internals = {'ids':None, 'usernames':[]}
+    internals = {
+        'ids':None, # a list of all existing ids
+        'usernames':[], # a list of all previous names
+        'lastupdate':{} # for each id, it's last update
+    }
     my_file = None
     user_id = None
     user_name = None
@@ -59,6 +63,18 @@ class Existing():
         if os.path.exists(OPT.existing_ids_file) and os.path.isdir(OPT.existing_ids_file):
             self.my_file = os.path.join(OPT.existing_ids_file, user_id)
         self.restoreFromFile()
+
+    def isYounger(self, id, last_update):
+        if id in self.internals['lastupdate']:
+            if self.internals['lastupdate'][id] < last_update:
+                self.internals['lastupdate'][id] = last_update
+                self.logger.debug("%s is younger"%id)
+                return True
+            self.logger.debug("%s is older"%id)
+            return False
+        self.internals['lastupdate'][id] = last_update
+        self.logger.debug("%s is younger"%id)
+        return True
 
     def backupToFile(self):
         self.logger.info(">>Existing backupToFile (%s)"%(self.user_id))
@@ -86,6 +102,9 @@ class Existing():
             self.internals['usernames'] = []
         if self.user_name not in self.internals['usernames']:
             self.internals['usernames'].append(self.user_name)
+        if 'lastupdate' not in self.internals:
+            self.internals['lastupdate'] = {}
+
         return True
 
     def forceReload(self):
