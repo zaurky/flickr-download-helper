@@ -408,6 +408,10 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb = False):
                         DownloadFile().write("%s video %s"%(str(datetime.datetime.now()), url))
                         #url = getVideoURL(photo)
                         #Logger().info("Download %s"%(url))
+                    elif 'video' in photo:
+                        Logger().info("Get the video %s"%(photo['urls']['url'][0]))
+                        url = selectBiggerPhotoSizeURL(sizes)
+                        DownloadFile().write("%s video %s"%(str(datetime.datetime.now()), url))
                     else:
                         url = selectBiggerPhotoSizeURL(sizes)
         urls[photo['id']] = url
