@@ -5,22 +5,9 @@ import time
 import sys, time
 import re
 import os
+import yaml
 
 from flickr_download_helper.config import OptConfigReader, OPT
-
-class HiJabberBot(JabberBot):
-    def __init__(self, jid, password, to_user, res = None):
-        super(HiJabberBot, self).__init__(jid, password, res)
-
-        self.config = OptConfigReader()
-        self.config.setup()
-
-        self._to_user = to_user
-
-    @botcmd
-    def hello(self, msg, attr):
-        self.send(self._to_user, 'hello')
-
 
 class LogJabberBot(JabberBot):
     thread_killed = False
@@ -142,8 +129,10 @@ class LogJabberBot(JabberBot):
         self.log("closing log file")
         self._file.close()
         sys.exit()
-
     
+    def log(self, s):
+        print self.__class__.__name__, datetime.datetime.now().strftime('%H:%M'), ':', s
+
     @botcmd
     def level(self, mess, args = ''):
         level = str(args)
@@ -220,16 +209,13 @@ class LogJabberBot(JabberBot):
         self.send(self._to_user, 'pause %s'%self._pause)
         self.send(self._to_user, 'log level %s'%self.log_level)
 
-write_to = 'AAA@gmail.com'
 
-username = 'ZZZ@jabber.org'
-password = 'ZZZ'
+f = open('/etc/fdh/jabber.yaml')
+conf = yaml.load(f)
 
-#bot_hi = HiJabberBot(username, password, write_to)
-#th = threading.Thread(target = bot_hi.serve_forever)
-#th.start()
-
-##########################################
+write_to = conf['write_to']
+username = conf['write_from']['email']
+password = conf['write_from']['password']
 
 def serve(username, password, write_to):
     bot = LogJabberBot(username, password, write_to)
@@ -243,8 +229,4 @@ def serve(username, password, write_to):
         bot.finish()
         return True
 
-username = 'XXX@jabber.org'
-password = 'XXX'
-
 while serve(username, password, write_to): pass
-

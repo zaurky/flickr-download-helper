@@ -1,0 +1,4 @@
+write_to: xxx@xxx.org
+write_from:
+    email: yyy@yyy.org
+    password: XXXXX
