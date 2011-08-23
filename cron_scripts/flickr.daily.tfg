@@ -1,0 +1,16 @@
+#!/bin/sh
+
+export LANG='fr_FR.UTF-8'
+. /etc/fdh/fdh.sh
+
+OPTIONS=" -d -r "
+
+if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
+    cd $FLICKRDIR
+    rm -f $FLICKRDIR/log/tdf.std*
+
+    for i in `cat "$DAILYTFG"`; do
+        echo "$i"
+        flickr_download_helper.py -d -r --dw --nick "$i" --tfg >> $FLICKRDIR/log/tdf.daily.stdout 2>> $FLICKRDIR/log/tdf.daily.stderr
+    done
+fi
