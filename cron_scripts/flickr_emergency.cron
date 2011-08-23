@@ -1,0 +1,22 @@
+#!/bin/sh
+
+. /etc/fdh/fdh.sh
+
+
+CURRENTSIZE=`df -k | grep "$MOUNTEDON" | awk '{print $4}'`
+
+if [ $MINSIZE -gt $CURRENTSIZE ]; then
+    if [ ! -f "$EMERGENCYFLAG" ]; then
+        echo "Critical disk level $CURRENTSIZE" | mail -s "FDH Emergency" "$MAIL"
+        cp -f "$ONLYCOLLECTEMERGENCY" "$ONLYCOLLECT"
+        touch "$EMERGENCYFLAG"
+    fi
+else
+    if [ -f "$EMERGENCYFLAG" ]; then
+        echo "End of critical disk level" | mail -s "FDH Emergency end" "$MAIL"
+        rm -f "$ONLYCOLLECT"
+        rm -f "$EMERGENCYFLAG"
+    fi
+fi
+
+
