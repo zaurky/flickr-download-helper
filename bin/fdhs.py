@@ -30,6 +30,11 @@ def getContactsPhotos(api, token):
     contacts_ids = getStaticContactList()
     Logger().info("static contacts %s"%(str(contacts_ids)))
     for c in contacts:
+        if OPT.only_collect is not None:
+            if c['nsid'] in OPT.only_collect:
+                contacts_ids.append(c['nsid'])
+            else:
+                continue
         if c['nsid'] != '52256782@N02': # TODO put the rejected in the conf file
             contacts_ids.append(c['nsid'])
 
