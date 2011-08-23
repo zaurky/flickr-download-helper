@@ -46,7 +46,7 @@ def contains(metadata, key):
         if key in metadata.exifKeys():
             return metadata[key]
         return None
-        
+
 def getMetadata(filename):
     try:
         metadata = pyexiv2.ImageMetadata(filename)
@@ -57,7 +57,7 @@ def getMetadata(filename):
         metadata = image.readMetadata()
         return image
     return None
-    
+
 def getGeneralInfo(filename):
     ret = {}
     metadata = getMetadata(filename)
