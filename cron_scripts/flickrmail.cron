@@ -9,6 +9,10 @@ if [ -f $FLICKRDIR/log/fdhmail ]; then
     echo "###########################################" >> $FLICKRDIR/log/fdhmail.txt
     USDATE=`LANG=us; date +"%a %b %e" -d yesterday`
     grep "$USDATE" -A 500 $FLICKRDIR/files/contacts_rev_change_name | sed -e 's/^>/+/' | sed -e 's/^</-/' >> $FLICKRDIR/log/fdhmail.txt
+    if [ -f "$EMERGENCYFLAG" ]; then
+        echo "###########################################" >> $FLICKRDIR/log/fdhmail.txt
+        echo "In emergency mode" >> $FLICKRDIR/log/fdhmail.txt
+    fi
 
     cat $FLICKRDIR/log/fdhmail.txt | mail -s "FLICKR DOWNLOAD HELPER [$DATE]" "$MAIL"
     mv $FLICKRDIR/log/fdhmail.txt $MAILCACHE/fdhmail.txt.$DATE
