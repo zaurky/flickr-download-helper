@@ -109,6 +109,7 @@ class LogJabberBot(JabberBot):
                             self.line[timestamp] = ("video : %s"%(m.group(2)), 3)
 
                 time.sleep(1)
+            self.finish()
         except Exception, e:
             self.log(e)
             return
