@@ -14,6 +14,19 @@ def mkdir_p(path):
         else: raise
 
 
+def file_load(path):
+    f = open(path, 'rb')
+    content = pickle.load(f)
+    f.close()
+    return content
+
+def file_dump(path, content):
+    if os.path.exists(path):
+        shutil.move(path, "%s.bkp"%(path))
+    f = open(path, 'wb')
+    pickle.dump(content, f)
+    f.close()
+
 class FileWrite(Singleton):
 #    existing = None
 #    def init(self):
