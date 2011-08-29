@@ -215,11 +215,11 @@ def json_request2(api, token, method, **kargs):
 def json_request3(api, token, method, message, message_params, **kargs):
     return json_request2(api, token, method, message=message, message_params=message_params, **kargs)
 
-def json_request(api, token, method, message, message_params, photo_id=None, page=None, per_page=None, user_id=None, photoset_id=None, username=None, collection_id=None, content_type=None, min_date=None, tags=None, count=None, min_upload_date=None, min_fave_date=None, group_id=None, url=None, method_name=None):
+def json_request(api, token, method, message, message_params, photo_id=None, page=None, per_page=None, user_id=None, photoset_id=None, username=None, collection_id=None, content_type=None, min_date=None, tags=None, count=None, min_upload_date=None, min_fave_date=None, group_id=None, url=None, method_name=None, invitation_only=None):
     if not token:
-        request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=100, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name)
+        request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=100, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only)
     else:
-        request = Flickr.API.Request(method=method, auth_token=token, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=100, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name)
+        request = Flickr.API.Request(method=method, auth_token=token, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=100, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only)
     # that's kind of ugly....
     if not photo_id: request.args.pop('photo_id')
     if not page: request.args.pop('page')
@@ -236,6 +236,7 @@ def json_request(api, token, method, message, message_params, photo_id=None, pag
     if not group_id:request.args.pop('group_id')
     if not url:request.args.pop('url')
     if not method_name:request.args.pop('method_name')
+    if not invitation_only:request.args.pop('invitation_only')
     if not content_type:
         request.args.pop('content_type')
     else:
@@ -312,12 +313,12 @@ def getPhotosetPhotos(api, token, photoset_id, page = 1):
     return content
 
 def getGroupPhotos(api, token, group_id, page = 1, user_id = None):
-    rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s for user %s, page %i (%s)", [group_id, user_id, page], page=page, per_page=100, group_id = group_id, user_id = user_id, content_type=7)
+    rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s for user %s, page %i (%s)", [group_id, user_id, page], page=page, per_page=500, group_id = group_id, user_id = user_id, content_type=7)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
     if int(len(content) + (page-1)*100) < int(rsp_json['photos']['total']):
-        next = getGroupPhotos(api, token, group_id, page = page+1, user_id = user_id)
+        next = getGroupPhotos(api, token, group_id, page+1, user_id)
         content.extend(next)
     return content
 
@@ -330,7 +331,7 @@ def searchGroup(api, token, group_name):
     return content
 
 def getUserGroups(api, token, user_id, page = 1):
-    rsp_json = json_request(api, token, 'flickr.people.getPublicGroups', "error while getting user %s groups, page %i (%s)", [user_id, page], page=page, per_page=100, user_id=user_id, content_type=7)
+    rsp_json = json_request(api, token, 'flickr.people.getPublicGroups', "error while getting user %s groups, page %i (%s)", [user_id, page], page=page, user_id=user_id, content_type=7, invitation_only=1)
     if not rsp_json: return []
 
     content = rsp_json['groups']['group']
