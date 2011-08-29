@@ -21,12 +21,15 @@ from flickr_download_helper.api import getPhotoset, getCollectionPhotosets, getC
 from flickr_download_helper.url_parser import UrlParser
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.utils import extends
-from flickr_download_helper.config import OptReader, OPT, OptConfigReader
+from flickr_download_helper.config import OptReader, OPT, OptConfigReader, INS
 from flickr_download_helper.proxy import FDHProxySettings
 from flickr_download_helper.existing import Existing #, FileWrite
+from flickr_download_helper.existing import file_load, file_dump
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
 import datetime
+from datetime import date
+import simplejson as json
 # from flickr_download_helper.database import SaveAll
 
 def main_init(read_command_line = True):
@@ -233,17 +236,57 @@ def main(api, token):
                 urls = extends(urls, l_urls)
                 photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
                 infos = extends(infos, l_infos)
-        elif OPT.try_from_groups:
-            Logger().info("\n== trying to get users (%s) photos from groups"%user_id)
-            groups = getUserGroups(api, token, user_id, page = 1)
+        elif OPT.try_from_groups or OPT.scan_groups:
+            if OPT.group_id:
+                groups = [{'name':OPT.group_id, 'nsid':OPT.group_id}]
+            else:
+                if OPT.try_from_groups:
+                    Logger().info("\n== trying to get users (%s) photos from groups"%user_id)
+                    groups = getUserGroups(api, token, user_id, page = 1)
+                elif OPT.scan_groups:
+                    Logger().info("\n== trying to get users (%s) photos from %s groups"%(user_id, OPT.my_id))
+                    if isinstance(OPT.scan_groups, bool):
+                        OPT.scan_groups = {'IAMADICT':True}
+
+                    if isinstance(OPT.scan_groups, dict) and 'groups' in OPT.scan_groups:
+                        groups = OPT.scan_groups['groups']
+                    else:
+                        groups = getUserGroups(api, token, OPT.my_id, page = 1)
+                        OPT.scan_groups['groups'] = groups
             photos = []
-            for group in groups[0:200]:
+            for group in groups[0:500]:
                 Logger().info("\n== getting group %s (%s)"%(group['name'], group['nsid']))
-                if OPT.force_group_verbose:
+                if OPT.scan_groups:
+                    gpath = os.path.join(OPT.groups_full_content_dir, "%s.%s"%(group['nsid'], date.today().strftime('%Y-%W')))
+
+                    l_photos = []
+                    if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+                        if INS['groups'].has_key(group['nsid']):
+                            Logger().debug("load group from session")
+                            l_photos = INS['groups'][group['nsid']]
+                    if len(l_photos) == 0:
+                        if os.path.exists(gpath):
+                            Logger().debug("%s exists"%gpath)
+                            l_photos = file_load(gpath)
+                        else:
+                            Logger().debug("%s don't exists"%gpath)
+                            l_photos = getGroupPhotos(api, token, group['nsid'])
+                            file_dump(gpath, l_photos)
+                        if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+                            Logger().debug("insert group into session")
+                            INS['groups'][group['nsid']] = l_photos
+                    count = 0
+                    for l_photo in l_photos:
+                        if l_photo['owner'] == user_id:
+                            count += 1
+                            photos.append(l_photo)
+                    if count != 0:
+                        Logger().debug("got %i photos in group %s"%(count, group['nsid']))
+                elif OPT.force_group_verbose:
                     l_photos = getGroupPhotos(api, token, group['nsid'], user_id = user_id)
                     count = 0
                     for l_photo in l_photos:
-                        if l_photo['owner_name'] == user_name:
+                        if l_photo['owner'] == user_id:
                             count += 1
                             photos.append(l_photo)
                     if count != 0:
@@ -296,6 +339,7 @@ def main(api, token):
                 user_name = user_name.replace("/", "##")
             destination = os.path.join(OPT.photo_dir, user_name)
             try:
+                Logger().debug('look if %s exists, else create it'%destination)
                 if OPT.retrieve and not os.path.exists(destination): os.mkdir(destination)
             except OSError, e:
                 Logger().error("%s: %s (%s)"%(e.errno, e.filename, e.strerror))

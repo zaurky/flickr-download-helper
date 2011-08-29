@@ -2,6 +2,7 @@ import os
 import sys
 import getopt
 import time
+import copy
 
 from ConfigParser import ConfigParser
 
@@ -16,6 +17,23 @@ class Singleton(object):
             cls._the_instance = object.__new__(cls)
         return cls._the_instance
 
+class InternalSession(Singleton):
+    _internal = {}
+    def has_key(self, k): return k in self._internal
+    def get(self, k): return self._internal[k]
+    def set(self, k, v): self._internal[k] = v
+    __setitem__ = set
+    __getitem__ = get
+    def clear(self): self._internal.clear()
+    def copy(self):
+        if self.__class__ is UserDict:
+            return Session(self._internal)
+        return copy.copy(self)
+    def keys(self): return self._internal.keys()
+    def items(self): return self._internal.items()
+    def values(self): return self._internal.values()
+
+
 class Options(Singleton):
     if 'HOME' in os.environ:
         configuration_dir = '%s/.flickr_download_helper/' % os.environ['HOME']
@@ -29,11 +47,14 @@ class Options(Singleton):
     daily_news_dir = os.path.join(news_dir, 'daily')
     existing_ids_file = os.path.join(configuration_dir, 'existing_ids')
     favorites_file = os.path.join(configuration_dir, 'apache', 'favorites') # be configurable
+    groups_full_content_dir = os.path.join(configuration_dir, 'groups')
 
     database_file = os.path.join(configuration_dir, 'db', 'fdh.db')
     database_logall_file = os.path.join(configuration_dir, 'db', 'logall.db')
 
     user_id = None
+    contact_ids = []
+    my_id = None
     url = None
     get_url = None
     nick = None
@@ -72,6 +93,8 @@ class Options(Singleton):
     force_group_verbose = False
     downloads_file = None
     jabber_last = None
+    only_collect = None
+    scan_groups = False
 
     user_hash = {}
 
@@ -104,6 +127,8 @@ class OptConfigReader(Singleton):
                 self.opt.logger = self.cp.get("main", "logger")
             if self.cp.has_option("main", "sleep_time"):
                 self.opt.sleep_time = self.cp.get("main", "sleep_time")
+            if self.cp.has_option("main", "my_id"):
+                self.opt.my_id = self.cp.get("main", "my_id")
 
         # get the directories to work in
         if self.cp.has_section("path"):
@@ -129,6 +154,16 @@ class OptConfigReader(Singleton):
                 self.opt.downloads_file = self.cp.get("path", "downloads_file")
             if self.cp.has_option("path", "jabber_last"):
                 self.opt.jabber_last = self.cp.get("path", "jabber_last")
+            if self.cp.has_option("path", "groups_full_content_dir"):
+                self.opt.groups_full_content_dir = self.cp.get("path", "groups_full_content_dir")
+            if self.cp.has_option("path", "only_collect"):
+                only_collect = self.cp.get("path", "only_collect")
+                if os.path.exists(only_collect):
+                    f = open(only_collect)
+                    self.opt.only_collect = [ id.replace('\n', '') for id in f.readlines() ]
+                    f.close()
+                    if len(self.opt.only_collect) == 0:
+                        self.opt.only_collect = None
 
         # get proxy options
         if self.cp.has_section("proxy"):
@@ -153,6 +188,7 @@ class OptReader(Singleton):
     -u --url                        the user home url
     -n --nick                       the user nick name (not the username)
     -l --username                   the user name
+    --ci --contact_ids              a list of contact ids separated by :
 
        --photoset_id                a photoset id to retrieve
     -c --collection_id              a collection id to retrieve (this is a set of photosets) it requires a user is set
@@ -192,6 +228,7 @@ class OptReader(Singleton):
 
     --tfg --try_from_groups         try to get this users photos from its groups (require a user)
     --fgv --force_group_verbose     force the verbose retrieving of groups (ie : get all the group content and then filter on user)
+    --sg --scan_groups              scan all your groups to see if there is a pic for user (if user_id is specified, else for all users)
 
     ###### options for getContacts
     --gcf --getContactFields        the contacts fields to display (a list of fields separated by ,)
@@ -215,7 +252,8 @@ class OptReader(Singleton):
                         "daily_in_dir", "dw", "gcf=", "getContactFields=",
                         "sbu", "sbp", "smart", "acf", "advContactFields",
                         "group_id=", 'try_from_groups', 'tfg',
-                        "fgv", "force_group_verbose", 'get_url='
+                        "fgv", "force_group_verbose", 'get_url=',
+                        "sg", "scan_groups", "ci=", "contact_ids="
                     ])
         except getopt.error, msg:
             print self.__doc__
@@ -237,6 +275,7 @@ class OptReader(Singleton):
             elif o in ("--url", "-u"): opt.url = a
             elif o in ("--nick", "-n"): opt.nick = a
             elif o in ("--username", "-l"): opt.username = a
+            elif o in ("--contact_ids", "--ci"): opt.contact_ids = a.split(':')
 
             elif o in ("--photoset_id"): opt.photoset_id = a
             elif o in ("--collection_id"): opt.collection_id = a
@@ -275,6 +314,7 @@ class OptReader(Singleton):
 
             elif o in ("--try_from_groups", "--tfg"): opt.try_from_groups = True
             elif o in ("--force_group_verbose", "--fgv"): opt.force_group_verbose = True
+            elif o in ("--scan_groups", "--sg"): opt.scan_groups = True
 
             elif o in ("--gcf", "--getContactFields"): opt.getContactFields = a.split(",")
             elif o in ("--acf", "--advContactFields"): opt.advContactFields = True
@@ -319,3 +359,4 @@ class OptReader(Singleton):
         return 0
 
 OPT=Options()
+INS=InternalSession()

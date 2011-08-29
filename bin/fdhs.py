@@ -13,22 +13,55 @@ import time
 import traceback
 from twisted.internet import reactor
 import flickr_download_helper
-from flickr_download_helper.api import getContactList, getStaticContactList
+from flickr_download_helper.api import getContactList, getStaticContactList, getUserGroups
 from flickr_download_helper.logger import Logger
-from flickr_download_helper.config import OPT
+from flickr_download_helper.config import OPT, INS
+
+def getContactPhotos(api, token):
+    Logger().debug("Contact : %s"%OPT.user_id)
+    try:
+        ret, count = flickr_download_helper.main(api, token)
+        if ret != 0:
+            if ret == 4:
+                # failed to find user, maybe next time!
+                pass
+            else:
+                Logger().error("getting %s failed (1: %s)"%(OPT.user_id, ret))
+        if OPT.smart and count == 0:
+            if INS['failure_level'] == 0:
+                # and OPT.user_id not in OPT.not_smart:
+                Logger().info("stopping there, the most recent user to upload didn't upload anything (%s)"%OPT.user_id)
+                return False
+            INS['failure_level'] -= 1
+    except Exception, e:
+        Logger().print_tb(e)
+        if hasattr(e, 'strerror') and e.strerror is not None and e.strerror != '':
+            Logger().error("getting %s failed (2: %s)"%(OPT.user_id, e.strerror))
+        elif hasattr(e, 'message') and e.message is not None and e.message != '':
+            Logger().error("getting %s failed (3: %s)"%(OPT.user_id, e.message))
+        else:
+            Logger().error("getting %s failed %s"%(OPT.user_id, str(e)))
+    return True
 
 def getContactsPhotos(api, token):
     # get the list of favorites
     setattr(OPT, 'has_been_download', {})
     contacts = []
+    no_static_contacts = False
     if OPT.smart:
         contacts = map(lambda nsid: {'nsid':nsid}, flickr_download_helper.getRecentlyUploadedContacts(api, token))
+    elif len(OPT.contact_ids) > 0:
+        contacts = map(lambda nsid: {'nsid':nsid}, OPT.contact_ids)
+        no_static_contacts = True
     else:
         contacts = getContactList(api, token)
-    failure_level = 10
+    INS['failure_level'] = 10
 
-    contacts_ids = getStaticContactList()
-    Logger().info("static contacts %s"%(str(contacts_ids)))
+    if no_static_contacts:
+        contacts_ids = []
+    else:
+        contacts_ids = getStaticContactList()
+        Logger().info("static contacts %s"%(str(contacts_ids)))
     for c in contacts:
         if OPT.only_collect is not None:
             if c['nsid'] in OPT.only_collect:
@@ -38,33 +71,28 @@ def getContactsPhotos(api, token):
         if c['nsid'] != '52256782@N02': # TODO put the rejected in the conf file
             contacts_ids.append(c['nsid'])
 
-    for contacts_id in contacts_ids:
-        Logger().debug("Contact : %s"%contacts_id)
-
-        # modify OPT
-        OPT.user_id = contacts_id
-        try:
-            ret, count = flickr_download_helper.main(api, token)
-            if ret != 0:
-                if ret == 4:
-                    # failed to find user, maybe next time!
-                    pass
-                else:
-                    Logger().error("getting %s failed (1: %s)"%(OPT.user_id, ret))
-            if OPT.smart and count == 0:
-                if failure_level == 0:
-                    # and OPT.user_id not in OPT.not_smart:
-                    Logger().info("stopping there, the most recent user to upload didn't upload anything (%s)"%OPT.user_id)
-                    break
-                failure_level -= 1
-        except Exception, e:
-            Logger().print_tb(e)
-            if hasattr(e, 'strerror') and e.strerror is not None and e.strerror != '':
-                Logger().error("getting %s failed (2: %s)"%(OPT.user_id, e.strerror))
-            elif hasattr(e, 'message') and e.message is not None and e.message != '':
-                Logger().error("getting %s failed (3: %s)"%(OPT.user_id, e.message))
-            else:
-                Logger().error("getting %s failed %s"%(OPT.user_id, str(e)))
+    if OPT.scan_groups:
+        INS['put_group_in_session'] = True
+        groups = getUserGroups(api, token, OPT.my_id, page = 1)
+        i = 0
+        for group in groups:
+            print "\rgroup %d/%d"%(i, len(groups)),
+            INS['groups'] = {}
+            OPT.group_id = group['nsid']
+            j = 0
+            for contacts_id in contacts_ids:
+                if (j % 10) == 0:
+                    print "*",
+                OPT.user_id = contacts_id
+                ret = getContactPhotos(api, token)
+                if not ret: break
+                j += 1
+            i += 1
+    else:
+        for contacts_id in contacts_ids:
+            OPT.user_id = contacts_id
+            ret = getContactPhotos(api, token)
+            if not ret: break
 
     users = ', '.join(OPT.has_been_download.keys())
 
