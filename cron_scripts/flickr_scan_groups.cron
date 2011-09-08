@@ -1,0 +1,14 @@
+#!/bin/sh
+
+export LANG='fr_FR.UTF-8'
+. /etc/fdh/fdh.sh
+
+OPTIONS=" -d -r "
+
+if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
+    cd $FLICKRDIR
+    rm -f $FLICKRDIR/log/sg.std*
+
+    flickr_download_helper_contacts.py -d -r --scan_groups --dw >> $FLICKRDIR/log/sg.stdout 2>> $FLICKRDIR/log/sg.stderr
+fi
+
