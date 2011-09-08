@@ -216,10 +216,12 @@ def json_request3(api, token, method, message, message_params, **kargs):
     return json_request2(api, token, method, message=message, message_params=message_params, **kargs)
 
 def json_request(api, token, method, message, message_params, photo_id=None, page=None, per_page=None, user_id=None, photoset_id=None, username=None, collection_id=None, content_type=None, min_date=None, tags=None, count=None, min_upload_date=None, min_fave_date=None, group_id=None, url=None, method_name=None, invitation_only=None):
+    if per_page is None:
+        per_page = 100
     if not token:
-        request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=100, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only)
+        request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=per_page, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only)
     else:
-        request = Flickr.API.Request(method=method, auth_token=token, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=100, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only)
+        request = Flickr.API.Request(method=method, auth_token=token, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=per_page, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only)
     # that's kind of ugly....
     if not photo_id: request.args.pop('photo_id')
     if not page: request.args.pop('page')
