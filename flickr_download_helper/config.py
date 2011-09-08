@@ -22,8 +22,12 @@ class InternalSession(Singleton):
     def has_key(self, k): return k in self._internal
     def get(self, k): return self._internal[k]
     def set(self, k, v): self._internal[k] = v
+    def delitem(self, k): del self._internal[k]
+    def __len__(self): return len(self._internal)
     __setitem__ = set
     __getitem__ = get
+    __delitem__ = delitem
+
     def clear(self): self._internal.clear()
     def copy(self):
         if self.__class__ is UserDict:
