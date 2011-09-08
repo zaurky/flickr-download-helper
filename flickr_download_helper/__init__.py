@@ -210,7 +210,9 @@ def main(api, token):
         user_id = user['id']
         Logger().warn("username = %s"%user_name)
 
-        existing = Existing(user_id, user_name)
+        if not OPT.scan_groups:
+            existing = Existing(user_id, user_name)
+
         if OPT.collection_id:
             Logger().info("\n== getting collection %s"%OPT.collection_id)
             OPT.sort_by_user = True
@@ -298,7 +300,12 @@ def main(api, token):
                     photos.extend(l_photos)
             total = len(photos)
             # user_id ok
-            photos = existing.grepPhotosDontExists(photos)
+            if OPT.scan_groups and len(photos) > 0:
+                existing = Existing(user_id, user_name)
+
+            if len(photos) > 0:
+                photos = existing.grepPhotosDontExists(photos)
+
             total_after_filter = len(photos)
             if total != total_after_filter:
                 Logger().info("filter %d photos" % (total - total_after_filter))
