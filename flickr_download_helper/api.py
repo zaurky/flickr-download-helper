@@ -338,6 +338,7 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = 50
     content = rsp_json['photos']['photo']
     total = int(len(content) + (page-1)*per_page)
     g_size = int(rsp_json['photos']['total'])
+    print "%s has %d results"%(group_id, g_size)
 
     def _cache_group(group_id, content, gpath=gpath):
         if user_id is None:
@@ -362,7 +363,7 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = 50
 
     ids = map(lambda x: x['id'], l_photos)
     for i in content:
-        if i['id'] not in l_photos:
+        if i['id'] in ids:
             l_photos.append(i)
 
     if len(l_photos) >= g_size:
