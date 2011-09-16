@@ -121,6 +121,9 @@ def main(api, token):
             OPT.user_id = None
             Logger().error("error parsing OPT.get_url : %s"%(url[0]))
 
+    if OPT.scan_groups:
+        INS['put_group_in_session'] = True
+
     if OPT.photo_id_in_file:
         # work on a list of photos ids
         content = readFile(OPT.photo_id_in_file)
@@ -256,27 +259,11 @@ def main(api, token):
                         groups = getUserGroups(api, token, OPT.my_id, page = 1)
                         OPT.scan_groups['groups'] = groups
             photos = []
+            index = 0
             for group in groups[0:500]:
-                Logger().info("\n== getting group %s (%s)"%(group['name'], group['nsid']))
+                Logger().info("\n== getting group %s (%s) [%s/%s]"%(group['name'], group['nsid'], index, len(groups)))
                 if OPT.scan_groups:
-                    gpath = os.path.join(OPT.groups_full_content_dir, "%s.%s"%(group['nsid'], date.today().strftime('%Y-%W')))
-
-                    l_photos = []
-                    if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
-                        if INS['groups'].has_key(group['nsid']):
-                            Logger().debug("load group from session")
-                            l_photos = INS['groups'][group['nsid']]
-                    if len(l_photos) == 0:
-                        if os.path.exists(gpath):
-                            Logger().debug("%s exists"%gpath)
-                            l_photos = file_load(gpath)
-                        else:
-                            Logger().debug("%s don't exists"%gpath)
-                            l_photos = getGroupPhotos(api, token, group['nsid'])
-                            file_dump(gpath, l_photos)
-                        if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
-                            Logger().debug("insert group into session")
-                            INS['groups'][group['nsid']] = l_photos
+                    l_photos = getGroupPhotos(api, token, group['nsid'])
                     count = 0
                     for l_photo in l_photos:
                         if l_photo['owner'] == user_id:
@@ -298,6 +285,7 @@ def main(api, token):
                     if len(l_photos) != 0:
                         Logger().debug("got %i photos in group %s"%(len(l_photos), group['nsid']))
                     photos.extend(l_photos)
+                index += 1
             total = len(photos)
             # user_id ok
             if OPT.scan_groups and len(photos) > 0:

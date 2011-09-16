@@ -2,8 +2,9 @@
 all the flickr_download_helper functions
 """
 
-from flickr_download_helper.config import OPT
+from flickr_download_helper.config import OPT, INS
 from flickr_download_helper.existing import Existing, FileWrite
+from flickr_download_helper.existing import file_load, file_dump
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
 from flickr_download_helper.utils import waitFor
@@ -314,14 +315,66 @@ def getPhotosetPhotos(api, token, photoset_id, page = 1):
         content.extend(next)
     return content
 
-def getGroupPhotos(api, token, group_id, page = 1, user_id = None):
-    rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s for user %s, page %i (%s)", [group_id, user_id, page], page=page, per_page=500, group_id = group_id, user_id = user_id, content_type=7)
+def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = 500):
+    if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+        if INS['groups'].has_key(group_id):
+            return INS['groups'][group_id]
+
+    gpath = os.path.join(OPT.groups_full_content_dir, group_id)
+    if user_id is None and OPT.group_from_cache:
+        if os.path.exists(gpath):
+            l_photos = file_load(gpath)
+            if l_photos is not None:
+                if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+                    INS['groups'][group_id] = l_photos
+                return l_photos
+
+    if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+        per_page = 100
+
+    rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s for user %s, page %i (%s)", [group_id, user_id, page], page=page, per_page=per_page, group_id = group_id, user_id = user_id, content_type=7)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
-    if int(len(content) + (page-1)*100) < int(rsp_json['photos']['total']):
-        next = getGroupPhotos(api, token, group_id, page+1, user_id)
-        content.extend(next)
+    total = int(len(content) + (page-1)*per_page)
+    g_size = int(rsp_json['photos']['total'])
+
+    def _cache_group(group_id, content, gpath=gpath):
+        if user_id is None:
+            if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+                INS['groups'][group_id] = content
+            if INS.has_key('temp_groups') and INS['temp_groups'].has_key(group_id):
+                del INS['temp_groups'][group_id]
+            file_dump(gpath, content)
+        return content
+
+    l_photos = []
+    if user_id is None:
+        if INS.has_key('temp_groups') and INS['temp_groups'].has_key(group_id):
+            l_photos = INS['temp_groups'][group_id]
+        elif os.path.exists(gpath):
+            l_photos = file_load(gpath)
+            if l_photos is None:
+                l_photos = []
+
+    if len(l_photos) >= g_size:
+        return _cache_group(group_id, l_photos)
+
+    ids = map(lambda x: x['id'], l_photos)
+    for i in content:
+        if i['id'] not in l_photos:
+            l_photos.append(i)
+
+    if len(l_photos) >= g_size:
+        return _cache_group(group_id, l_photos)
+
+    content = l_photos
+    total = len(l_photos)
+
+    if len(l_photos) < g_size:
+        INS['temp_groups'][group_id] = content
+        content = getGroupPhotos(api, token, group_id, page+1, user_id, per_page=per_page)
+
     return content
 
 def searchGroup(api, token, group_name):
@@ -642,8 +695,11 @@ def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, i
 
             if len(old_content) == new_len:
                 # get md5
-                if md5.new(old_content).digest() == new_md5:
+                old_md5 = md5.new(old_content).digest()
+                if old_md5 == new_md5:
                     # if the 2 files are the same
+                    Logger().debug("addFile %s (%s) == %s (%s)" % \
+                        (old_filename, old_md5, filename, new_md5))
                     os.unlink(filename)
                     return 0
 
