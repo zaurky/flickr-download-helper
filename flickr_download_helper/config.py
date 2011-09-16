@@ -18,7 +18,7 @@ class Singleton(object):
         return cls._the_instance
 
 class InternalSession(Singleton):
-    _internal = {}
+    _internal = {'groups':{}, 'temp_groups':{}}
     def has_key(self, k): return k in self._internal
     def get(self, k): return self._internal[k]
     def set(self, k, v): self._internal[k] = v
@@ -99,6 +99,7 @@ class Options(Singleton):
     jabber_last = None
     only_collect = None
     scan_groups = False
+    group_from_cache = False
 
     user_hash = {}
 
@@ -233,6 +234,7 @@ class OptReader(Singleton):
     --tfg --try_from_groups         try to get this users photos from its groups (require a user)
     --fgv --force_group_verbose     force the verbose retrieving of groups (ie : get all the group content and then filter on user)
     --sg --scan_groups              scan all your groups to see if there is a pic for user (if user_id is specified, else for all users)
+    --gfc --group_from_cache        dont reload the groups, take them from the cache
 
     ###### options for getContacts
     --gcf --getContactFields        the contacts fields to display (a list of fields separated by ,)
@@ -257,7 +259,8 @@ class OptReader(Singleton):
                         "sbu", "sbp", "smart", "acf", "advContactFields",
                         "group_id=", 'try_from_groups', 'tfg',
                         "fgv", "force_group_verbose", 'get_url=',
-                        "sg", "scan_groups", "ci=", "contact_ids="
+                        "sg", "scan_groups", "ci=", "contact_ids=",
+                        "gfc", "group_from_cache"
                     ])
         except getopt.error, msg:
             print self.__doc__
@@ -319,6 +322,7 @@ class OptReader(Singleton):
             elif o in ("--try_from_groups", "--tfg"): opt.try_from_groups = True
             elif o in ("--force_group_verbose", "--fgv"): opt.force_group_verbose = True
             elif o in ("--scan_groups", "--sg"): opt.scan_groups = True
+            elif o in ("--group_from_cache", "--gfc"): opt.group_from_cache = True
 
             elif o in ("--gcf", "--getContactFields"): opt.getContactFields = a.split(",")
             elif o in ("--acf", "--advContactFields"): opt.advContactFields = True
