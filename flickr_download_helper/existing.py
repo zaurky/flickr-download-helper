@@ -15,9 +15,12 @@ def mkdir_p(path):
 
 
 def file_load(path):
-    f = open(path, 'rb')
-    content = pickle.load(f)
-    f.close()
+    try:
+        f = open(path, 'rb')
+        content = pickle.load(f)
+        f.close()
+    except:
+        content = None
     return content
 
 def file_dump(path, content):
