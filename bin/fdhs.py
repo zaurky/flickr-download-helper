@@ -76,17 +76,16 @@ def getContactsPhotos(api, token):
         groups = getUserGroups(api, token, OPT.my_id, page = 1)
         i = 0
         for group in groups:
-            print "\rgroup %d/%d"%(i, len(groups)),
+            Logger().warn("scan_group %d/%d"%(i, len(groups)))
             INS['groups'] = {}
+            INS['temp_groups'] = {}
             OPT.group_id = group['nsid']
-            j = 0
             for contacts_id in contacts_ids:
-                if (j % 10) == 0:
-                    print "*",
                 OPT.user_id = contacts_id
                 ret = getContactPhotos(api, token)
                 if not ret: break
-                j += 1
+            del INS['groups']
+            del INS['temp_groups']
             i += 1
     else:
         for contacts_id in contacts_ids:

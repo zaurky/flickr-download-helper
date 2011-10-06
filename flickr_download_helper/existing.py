@@ -19,7 +19,8 @@ def file_load(path):
         f = open(path, 'rb')
         content = pickle.load(f)
         f.close()
-    except:
+    except Exception, e:
+        print e
         content = None
     return content
 

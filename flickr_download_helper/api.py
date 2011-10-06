@@ -316,6 +316,7 @@ def getPhotosetPhotos(api, token, photoset_id, page = 1):
     return content
 
 def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = 500):
+    print "getGroupPhotos %s %s %s"%(group_id, page, user_id)
     if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session']:
         if INS['groups'].has_key(group_id):
             return INS['groups'][group_id]
@@ -325,11 +326,12 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = 50
         if os.path.exists(gpath):
             l_photos = file_load(gpath)
             if l_photos is not None:
+                print "load from cache"
                 if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
                     INS['groups'][group_id] = l_photos
                 return l_photos
 
-    if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+    if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session'] and not OPT.group_from_cache:
         per_page = 100
 
     rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s for user %s, page %i (%s)", [group_id, user_id, page], page=page, per_page=per_page, group_id = group_id, user_id = user_id, content_type=7)
@@ -363,9 +365,12 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = 50
 
     ids = map(lambda x: x['id'], l_photos)
     for i in content:
-        if i['id'] in ids:
+        if i['id'] not in ids:
             l_photos.append(i)
 
+    l_photos = dict(map(lambda x: (x['id'], x), l_photos)).values()
+    print len(l_photos)
+    print g_size
     if len(l_photos) >= g_size:
         return _cache_group(group_id, l_photos)
 
@@ -635,6 +640,16 @@ def readFile(filename):
         Logger().error("file not found %s"%filename)
     return None
 
+def _downloadProtect(url, nb_tries=5):
+    if nb_tries <=0:
+        return None
+    try:
+        return urllib2.urlopen(url).read()
+    except urllib2.URLError, e:
+        return _downloadProtect(url, nb_tries-1)
+    except Exception, e:
+        Logger().error("while downloading the file from %s (e: %s)"%(url, str(e)))
+
 def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, info = None):
     if not check_exists and os.path.exists(filename):
         Logger().info("%s exists"%info['id'])
@@ -644,19 +659,7 @@ def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, i
         Logger().info("%s exists"%info['id'])
         return 0
 
-    content = None
-    try:
-        content = urllib2.urlopen(url).read()
-    except urllib2.HTTPError, e:
-        # try a second time and then fail
-        Logger().warn("downloading file %s failed %s"%(url, str(e.message)))
-        Logger().warn("second try to get the file %s"%url)
-        try:
-            content = urllib2.urlopen(url).read()
-        except urllib2.HTTPError, e:
-            Logger().error("while downloading the file from %s (httpe: %s)"%(url, str(e.message)))
-        except Exception, e:
-            Logger().error("while downloading the file from %s (e: %s)"%(url, str(e)))
+    content = _downloadProtect(url)
 
     if content == None: return 0
 
@@ -677,7 +680,11 @@ def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, i
 
     FileWrite().write(filename, content, existing)
     if info:
-        exif.fillFile(None, None, filename, info = info)
+        try:
+            exif.fillFile(None, None, filename, info = info)
+        except Exception, e:
+            Logger().warn("Failed to put exif")
+            Logger().warn(e)
 
     if check_exists and old_filename != filename:
         f = open(filename, 'rb')
@@ -699,10 +706,16 @@ def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, i
                 old_md5 = md5.new(old_content).digest()
                 if old_md5 == new_md5:
                     # if the 2 files are the same
-                    Logger().debug("addFile %s (%s) == %s (%s)" % \
-                        (old_filename, old_md5, filename, new_md5))
+                    Logger().debug("addFile %s == %s" % \
+                        (old_filename, filename))
                     os.unlink(filename)
                     return 0
+                else:
+                    Logger().debug("addFile %s != %s (md5)" % \
+                        (old_filename, filename))
+            else:
+                Logger().debug("addFile %s (%s) != %s (%s) len" % \
+                    (old_filename, len(old_content), filename, new_len))
 
     if OPT.new_in_dir and type(OPT.new_in_dir) != bool:
         link_dest = os.path.join(OPT.new_in_dir, os.path.basename(filename))

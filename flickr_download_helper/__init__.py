@@ -121,8 +121,8 @@ def main(api, token):
             OPT.user_id = None
             Logger().error("error parsing OPT.get_url : %s"%(url[0]))
 
-    if OPT.scan_groups:
-        INS['put_group_in_session'] = True
+#    if OPT.scan_groups:
+#        INS['put_group_in_session'] = True
 
     if OPT.photo_id_in_file:
         # work on a list of photos ids
