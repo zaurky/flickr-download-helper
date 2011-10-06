@@ -6,21 +6,24 @@ FDHPATH=$FLICKRDIR
 LOG="$FDHPATH/log/fdh.log"
 IDS=`cat $FDHPATH/files/id_to_mail`
 
-DATE=`date +%Y-%m-%d`
-HOUR=`date +%H`
+DATE=`date --date="1 hour ago" +%Y-%m-%d`
+HOUR=`date --date="1 hour ago" +%H`
+
 BUFFER="$TMPDIR/log.buffer.$HOUR"
-grep "$DATE $HOUR:" $LOG > $BUFFER
+grep "$DATE $HOUR:" $DOWNLOADS_FILE > $BUFFER
+#grep "$DATE $HOUR:" $LOG > $BUFFER
 
 OUTPUT=''
 
 for ID in $IDS; do
-  NAME=`cat $BUFFER | grep "Existing initialising with $ID" | sed -e "s/.*$ID //" | head -n 1`
+  NAME=`grep $ID $FDHPATH/files/contacts_rev_name.new | sed -e "s/^$ID\t//"`
   if [ "x$NAME" == "x" ]; then continue; fi
-  LINE=`cat $BUFFER | grep "$NAME" | grep ' for users :' | wc -l`
+  LINE=`cat $BUFFER | grep "$NAME" | wc -l`
   if [ $LINE -gt 0 ]; then
-      OUTPUT="$OUTPUT$ID $NAME\n"
+    OUTPUT="$OUTPUT$ID $NAME\n"
   fi
 done
+OUTPUT=`echo -e "$OUTPUT" | sort -u`
 
 SOMETHING=`echo -e "$OUTPUT" | wc -w`
 if [ $SOMETHING -gt 0 ]; then
