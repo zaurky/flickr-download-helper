@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 getContacts.py --getContactFields "username,nsid" > ../files/contacts_with_names
 
