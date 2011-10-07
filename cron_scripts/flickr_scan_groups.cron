@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 export LANG='fr_FR.UTF-8'
 . /etc/fdh/fdh.sh
 
 OPTIONS=" -d -r "
 
-if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
+if [ "x$DISABLE" == "x" ] && [ -d "$FLICKRPHOTODIR" ]; then
     cd $FLICKRDIR
     rm -f $FLICKRDIR/log/sg.std*
 
