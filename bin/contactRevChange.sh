@@ -24,9 +24,10 @@ diff $FDHPATH/files/contacts_rev.old $FDHPATH/files/contacts_rev.new | grep ' ' 
 if [ `wc -l $FDHPATH/files/contacts_rev.diff | awk '{print $1}'` -ne 0 ]; then
     if [ -s $FDHPATH/files/contacts_rev.diff ]; then
         for i in `cat $FDHPATH/files/contacts_rev.diff | grep '>' | awk '{print $2}'`; do
-            $FDHPATH/bin/fdh.py -d -r --nick $i --sbp
+            $FDHPATH/bin/fdh.py -d -r --nick $i --sort_by_photoset
             $FDHPATH/bin/fdh.py -d -r --nick $i
-            $FDHPATH/bin/fdh.py -d -r --nick $i --tfg
+            $FDHPATH/bin/fdh.py -d -r --nick $i --try_from_groups
+#	    $FDHPATH/bin/fdh.py -d -r --nick $i --scan_groups --group_from_cache
         done
         date >> $FDHPATH/files/contacts_rev_change
         cat $FDHPATH/files/contacts_rev.diff >> $FDHPATH/files/contacts_rev_change
