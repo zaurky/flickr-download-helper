@@ -5,7 +5,7 @@
 if [ -f $FLICKRDIR/log/fdhmail ]; then
     DATE=`cat $FLICKRDIR/log/fdhmail`
     FDATE=`perl -e '$a="'$DATE'"; $a =~ s/(....)(..)(..)/$1-$2-$3/; print $a;'`
-    perl $FLICKRDIR/bin/parselog4.1.pl $FLICKRDIR/log/fdh.log.$DATE.0 $FDATE HTML | grep -v "< $DATE" > $FLICKRDIR/log/fdhmail.txt
+    perl $FLICKRBINDIR/parselog4.1.pl $FLICKRDIR/log/fdh.log.$DATE.0 $FDATE HTML | grep -v "< $DATE" > $FLICKRDIR/log/fdhmail.txt
     echo "###########################################" >> $FLICKRDIR/log/fdhmail.txt
     USDATE=`LANG=us; date +"%a %b %e" -d yesterday`
     grep "$USDATE" -A 500 $FLICKRDIR/files/contacts_rev_change_name | sed -e 's/^>/+/' | sed -e 's/^</-/' >> $FLICKRDIR/log/fdhmail.txt
