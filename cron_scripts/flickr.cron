@@ -3,6 +3,17 @@
 export LANG='fr_FR.UTF-8'
 . /etc/fdh/fdh.sh
 
+LOCKFILE="$TMPDIR/flickr.cron"
+if [ -f "$LOCKFILE" ]; then
+    FILEAGE=$(($(date +%s) - $(stat -c '%Y' "$LOCKFILE")))
+    if [ $FILEAGE -lt 14390 ]; then
+        # if the lock is less than 4 hours old
+        exit
+    fi
+    killall -9 flickr.cron
+fi
+touch "$LOCKFILE"
+
 TIMESTAMP="$FLICKRDIR/log/timestamp.cron"
 OPTIONS=" -d -r "
 TAG=`date +%s`
@@ -29,3 +40,5 @@ if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]
 #    done
     rm -f $FLICKRDIR/log/cron.stdout.$TAG $FLICKRDIR/log/cron.stderr.$TAG
 fi
+
+rm -f "$LOCKFILE"
