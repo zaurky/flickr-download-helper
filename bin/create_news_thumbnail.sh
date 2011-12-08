@@ -43,7 +43,7 @@ for i in `cat $TMPDIR/fdh.thumbgen.files.$TAG | sed -e 's| |~~|g'`; do
         convert -thumbnail "80x80" "$FILE" "$THUMBFILE"
     fi
     if [ ! -e "$MOBILEFILE" ]; then
-        convert -resize "800x800" "$FILE" "$MOBILEFILE"
+        convert -resize "400x400" "$FILE" "$MOBILEFILE"
     fi
     echo `basename "$FILE"` >> "$THUMBDIR/$DATE.files.tmp"
 done
