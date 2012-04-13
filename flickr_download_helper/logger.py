@@ -45,6 +45,7 @@ class FileLogger(Singleton):
     def setup(self):
         self.internal = logging.getLogger()
         self.session_id = "%06d"%(random.randint(0, 10000))
+        print "logging as %s"%self.session_id
 
     def debug(self, label):
         self.internal.debug(self.treatLabel(label))

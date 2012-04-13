@@ -53,6 +53,20 @@ class Options(Singleton):
     favorites_file = os.path.join(configuration_dir, 'apache', 'favorites') # be configurable
     groups_full_content_dir = os.path.join(configuration_dir, 'groups')
 
+    contact_to_remove_180 = '/root/fdh/files/to_remove'
+    contact_to_remove_30 = "%s.30" % contact_to_remove_180
+    contact_to_remove_60 = "%s.60" % contact_to_remove_180
+    contact_to_remove_90 = "%s.90" % contact_to_remove_180
+
+    a_contact_to_remove = [
+                None,
+                contact_to_remove_180,
+                contact_to_remove_90,
+                contact_to_remove_60,
+                contact_to_remove_30,
+            ]
+    contact_to_remove = '/root/fdh/files/to_remove'
+
     database_file = os.path.join(configuration_dir, 'db', 'fdh.db')
     database_logall_file = os.path.join(configuration_dir, 'db', 'logall.db')
 
@@ -92,6 +106,7 @@ class Options(Singleton):
     smart = False
     not_smart = []
     check_md5 = []
+    skiped_group = []
     group_id = None
     try_from_groups = False
     force_group_verbose = False
@@ -100,6 +115,7 @@ class Options(Singleton):
     only_collect = None
     scan_groups = False
     group_from_cache = False
+    check_old_contacts = 0
 
     user_hash = {}
 
@@ -134,6 +150,8 @@ class OptConfigReader(Singleton):
                 self.opt.sleep_time = self.cp.get("main", "sleep_time")
             if self.cp.has_option("main", "my_id"):
                 self.opt.my_id = self.cp.get("main", "my_id")
+            if self.cp.has_option("main", "skiped_group"):
+                self.opt.skiped_group = self.cp.get("main", "skiped_group").split(':')
 
         # get the directories to work in
         if self.cp.has_section("path"):
@@ -231,6 +249,8 @@ class OptReader(Singleton):
        --proxy_user                 the proxy username if needed
        --proxy_pass                 the proxy password if needed
 
+       --check_n_old_contacts       remove old contact from the contact list when retrieving photos
+
     --tfg --try_from_groups         try to get this users photos from its groups (require a user)
     --fgv --force_group_verbose     force the verbose retrieving of groups (ie : get all the group content and then filter on user)
     --sg --scan_groups              scan all your groups to see if there is a pic for user (if user_id is specified, else for all users)
@@ -260,7 +280,7 @@ class OptReader(Singleton):
                         "group_id=", 'try_from_groups', 'tfg',
                         "fgv", "force_group_verbose", 'get_url=',
                         "sg", "scan_groups", "ci=", "contact_ids=",
-                        "gfc", "group_from_cache"
+                        "gfc", "group_from_cache", "check_n_old_contacts="
                     ])
         except getopt.error, msg:
             print self.__doc__
@@ -323,6 +343,11 @@ class OptReader(Singleton):
             elif o in ("--force_group_verbose", "--fgv"): opt.force_group_verbose = True
             elif o in ("--scan_groups", "--sg"): opt.scan_groups = True
             elif o in ("--group_from_cache", "--gfc"): opt.group_from_cache = True
+
+            elif o in ("--check_n_old_contacts"):
+                opt.check_old_contacts = int(a)
+                opt.contact_to_remove = opt.a_contact_to_remove[int(a)]
+                print "using %s"%opt.contact_to_remove
 
             elif o in ("--gcf", "--getContactFields"): opt.getContactFields = a.split(",")
             elif o in ("--acf", "--advContactFields"): opt.advContactFields = True

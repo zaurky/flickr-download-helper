@@ -17,7 +17,8 @@ from flickr_download_helper.api import getPhotoInfo, getUserPhotos, getUserGroup
 from flickr_download_helper.api import getPhotoURLFlickr, getPhotosetInfos, getUserFromID, getUserPhotosets, getGroupPhotos
 from flickr_download_helper.api import getUserFromUsername, getUserFromUrl, getUserFromNick, readFile, downloadPhotoFromURL, getPhotosByTag
 from flickr_download_helper.api import backupUser, restoreUser, initialisationFlickrApi
-from flickr_download_helper.api import getPhotoset, getCollectionPhotosets, getContactsPhotos, searchGroup
+from flickr_download_helper.api import getPhotoset, getCollectionPhotosets, \
+    getContactsPhotos, searchGroup, getUser
 from flickr_download_helper.url_parser import UrlParser
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.utils import extends
@@ -184,21 +185,9 @@ def main(api, token):
         urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
     else:
         # we work with user_id, so whatever is the input, now we want user_id
-        Logger().info("\n== get user_id")
-        if OPT.user_id and OPT.user_id in OPT.user_hash:
-            user = OPT.user_hash[OPT.user_id]
-        elif OPT.user_id == None:
-            if OPT.url:
-                user = getUserFromUrl(api, OPT.url)
-            elif OPT.nick:
-                user = getUserFromNick(api, OPT.nick)
-            elif OPT.username:
-                user = getUserFromUsername(api, OPT.username)
-            else:
-                Logger().error("can't get any user_id")
-                return (3, 0)
-        else:
-            user = getUserFromID(api, OPT.user_id)
+        user = getUser(api, token)
+        if user is None:
+            return (3, 0)
 
         if not user:
             Logger().error("can't find user")
@@ -263,7 +252,7 @@ def main(api, token):
             for group in groups[0:500]:
                 Logger().info("\n== getting group %s (%s) [%s/%s]"%(group['name'], group['nsid'], index, len(groups)))
                 if OPT.scan_groups:
-                    l_photos = getGroupPhotos(api, token, group['nsid'])
+                    l_photos = getGroupPhotos(api, token, group['nsid'], per_page=500)
                     count = 0
                     for l_photo in l_photos:
                         if l_photo['owner'] == user_id:
@@ -272,7 +261,7 @@ def main(api, token):
                     if count != 0:
                         Logger().debug("got %i photos in group %s"%(count, group['nsid']))
                 elif OPT.force_group_verbose:
-                    l_photos = getGroupPhotos(api, token, group['nsid'], user_id = user_id)
+                    l_photos = getGroupPhotos(api, token, group['nsid'], user_id = user_id, per_page=500)
                     count = 0
                     for l_photo in l_photos:
                         if l_photo['owner'] == user_id:
@@ -281,7 +270,7 @@ def main(api, token):
                     if count != 0:
                         Logger().debug("got %i photos in group %s"%(count, group['nsid']))
                 else:
-                    l_photos = getGroupPhotos(api, token, group['nsid'], user_id = user_id)
+                    l_photos = getGroupPhotos(api, token, group['nsid'], user_id = user_id, per_page=500)
                     if len(l_photos) != 0:
                         Logger().debug("got %i photos in group %s"%(len(l_photos), group['nsid']))
                     photos.extend(l_photos)
@@ -312,7 +301,7 @@ def main(api, token):
                 photos = getPhotosByTag(api, token, user_id, OPT.tags)
             else:
                 Logger().info("\n== getting user %s files in group %s"%(user_name, OPT.group_id))
-                photos = getGroupPhotos(api, token, OPT.group_id, user_id = user_id)
+                photos = getGroupPhotos(api, token, OPT.group_id, user_id = user_id, per_page=500)
             total = len(photos)
             # user_id ok
             existing = Existing(user_id, user_name)
