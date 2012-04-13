@@ -3,13 +3,13 @@
 export LANG='fr_FR.UTF-8'
 . /etc/fdh/fdh.sh
 
-OPTIONS=" -d -r "
+OPTIONS=" -d -r --check_n_old_contacts 1 "
 
 if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
     cd $FLICKRDIR
     rm -f $FLICKRDIR/log/tdf.std*
 
-    for i in `bin/getContacts.py `; do
+    for i in `bin/getContacts.py --check_n_old_contacts 1 `; do
       echo "$i"
       flickr_download_helper.py -d -r --dw --nick "$i" --tfg >> $FLICKRDIR/log/tdf.stdout 2>> $FLICKRDIR/log/tdf.stderr
     done

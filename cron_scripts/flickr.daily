@@ -3,7 +3,7 @@
 export LANG='fr_FR.UTF-8'
 . /etc/fdh/fdh.sh
 
-OPTIONS=" -d -r "
+OPTIONS=" -d -r --dw --check_n_old_contacts 1 "
 
 if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then
     cd $FLICKRDIR

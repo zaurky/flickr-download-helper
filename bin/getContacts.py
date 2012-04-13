@@ -32,6 +32,17 @@ def encode(string):
     except: return string.encode('utf8')
 
 contacts = getContactList(api, token)
+
+if OPT.check_old_contacts:
+    import pickle
+    f = open(OPT.contact_to_remove, 'rb')
+    to_remove = pickle.load(f)
+    f.close()
+
+    contacts = map(lambda c: c['nsid'], contacts)
+    contacts = list(set(contacts) - set(to_remove))
+    contacts = map(lambda c: {'nsid': c}, contacts)
+
 for c in contacts:
     line = []
     user = None

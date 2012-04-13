@@ -1,9 +1,10 @@
 #!/bin/bash
 
+set -x
 export LANG='fr_FR.UTF-8'
 . /etc/fdh/fdh.sh
 
-LOCKFILE="$TMPDIR/flickr.cron"
+LOCKFILE="$TMPDIR/flickr.cron.lock"
 if [ -f "$LOCKFILE" ]; then
     FILEAGE=$(($(date +%s) - $(stat -c '%Y' "$LOCKFILE")))
     if [ $FILEAGE -lt 14390 ]; then
@@ -15,7 +16,8 @@ fi
 touch "$LOCKFILE"
 
 TIMESTAMP="$FLICKRDIR/log/timestamp.cron"
-OPTIONS=" -d -r "
+#OPTIONS=" -d -r --dw --check_n_old_contacts 150 "
+OPTIONS=" -d -r --dw --check_n_old_contacts 1 "
 TAG=`date +%s`
 
 if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]; then

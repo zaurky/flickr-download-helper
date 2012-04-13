@@ -3,6 +3,17 @@
 export LANG='fr_FR.UTF-8'
 . /etc/fdh/fdh.sh
 
+LOCKFILE="$TMPDIR/flickr_smart.cron.lock"
+if [ -f "$LOCKFILE" ]; then
+    FILEAGE=$(($(date +%s) - $(stat -c '%Y' "$LOCKFILE")))
+    if [ $FILEAGE -lt 14390 ]; then
+        # if the lock is less than 4 hours old
+        exit
+    fi
+    killall -9 flickr_smart.cron
+fi
+touch "$LOCKFILE"
+
 OPTIONS=" -d -r --smart --since last1h"
 TAG=`date +%s`
 
@@ -11,3 +22,5 @@ if [ "x$DISABLE" == "x" ] && [ -d "$FLICKRPHOTODIR" ]; then
     python /usr/bin/flickr_download_helper_contacts.py $OPTIONS >> $FLICKRDIR/log/smart_cron.stdout.$TAG 2>> $FLICKRDIR/log/smart_cron.stderr.$TAG
     rm -f $FLICKRDIR/log/smart_cron.stdout.$TAG $FLICKRDIR/log/smart_cron.stderr.$TAG
 fi
+
+rm -fr "$LOCKFILE"

@@ -55,12 +55,25 @@ def getContactsPhotos(api, token):
         no_static_contacts = True
     else:
         contacts = getContactList(api, token)
+        # TODO should keep new added contacts
+        if OPT.check_old_contacts:
+            import pickle
+            f = open(OPT.contact_to_remove, 'rb')
+            to_remove = pickle.load(f)
+            f.close()
+
+            contacts = map(lambda c: c['nsid'], contacts)
+            contacts = list(set(contacts) - set(to_remove))
+            contacts = map(lambda c: {'nsid': c}, contacts)
+
+    print len(contacts)
     INS['failure_level'] = 10
 
-    if no_static_contacts:
-        contacts_ids = []
-    else:
+    static_ids = []
+    contacts_ids = []
+    if not no_static_contacts:
         contacts_ids = getStaticContactList()
+        static_ids = list(contacts_ids)
         Logger().info("static contacts %s"%(str(contacts_ids)))
     for c in contacts:
         if OPT.only_collect is not None:
@@ -76,6 +89,8 @@ def getContactsPhotos(api, token):
         groups = getUserGroups(api, token, OPT.my_id, page = 1)
         i = 0
         for group in groups:
+            if group['nsid'] in OPT.skiped_group:
+                continue
             Logger().warn("scan_group %d/%d"%(i, len(groups)))
             INS['groups'] = {}
             INS['temp_groups'] = {}
@@ -91,7 +106,7 @@ def getContactsPhotos(api, token):
         for contacts_id in contacts_ids:
             OPT.user_id = contacts_id
             ret = getContactPhotos(api, token)
-            if not ret: break
+            if not ret and contacts_id not in static_ids: break
 
     users = ', '.join(OPT.has_been_download.keys())
 
