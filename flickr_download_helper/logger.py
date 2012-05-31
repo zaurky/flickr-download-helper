@@ -21,7 +21,8 @@ class ConsoleLogger(Singleton):
         print label
 
     def print_tb(self, label):
-        traceback.print_tb(label)
+        if hasattr(traceback, print_tb):
+            traceback.print_tb(label)
 
 class NoneLogger(Singleton):
     def debug(self, label): pass
