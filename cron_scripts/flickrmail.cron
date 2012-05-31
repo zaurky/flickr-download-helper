@@ -8,7 +8,7 @@ if [ -f $FLICKRDIR/log/fdhmail ]; then
     perl $FLICKRBINDIR/parselog4.1.pl $FLICKRDIR/log/fdh.log.$DATE.0 $FDATE HTML | grep -v "< $DATE" > $FLICKRDIR/log/fdhmail.txt
     echo "###########################################" >> $FLICKRDIR/log/fdhmail.txt
     USDATE=`LANG=us; date +"%a %b %e" -d yesterday`
-    grep "$USDATE" -A 500 $FLICKRDIR/files/contacts_rev_change_name | sed -e 's/^>/+/' | sed -e 's/^</-/' >> $FLICKRDIR/log/fdhmail.txt
+    grep "$USDATE" -A 500 $FLICKRDIR/files/contacts_rev_change_name | grep -v "logging as" | sed -e 's/^>/+/' | sed -e 's/^</-/' >> $FLICKRDIR/log/fdhmail.txt
     if [ -f "$EMERGENCYFLAG" ]; then
         echo "###########################################" >> $FLICKRDIR/log/fdhmail.txt
         echo "In emergency mode" >> $FLICKRDIR/log/fdhmail.txt
