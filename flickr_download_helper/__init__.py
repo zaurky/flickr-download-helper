@@ -90,14 +90,18 @@ def main(api, token):
     if OPT.get_url:
         Logger().info("\n== retrieve from URL")
         url = UrlParser(OPT.get_url).parse()
+
         if '@' in url[1]:
             OPT.user_id = url[1]
         else:
             OPT.url = url[1]
+
         if url[0] == FDHPR.USER:
             pass
         elif url[0] == FDHPR.TAG:
             OPT.tags = (url[2])
+            OPT.username = OPT.url
+            OPT.url = None
         elif url[0] == FDHPR.SET:
             OPT.photoset_id = url[2]
         elif url[0] == FDHPR.COLLECTION:
