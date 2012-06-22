@@ -327,7 +327,7 @@ def getGroupPhotosFromScratch(api, token, group_id, batch=0):
         page = spage + batch * 100
         rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s, page %i (%s)", [group_id, page], page=page, per_page=500, group_id = group_id, content_type=7)
         content.extend(rsp_json['photos']['photo'])
-        if page * 500 > rsp_json['photos']['total']:
+        if page * 500 > int(rsp_json['photos']['total']):
             break
 
     return content
