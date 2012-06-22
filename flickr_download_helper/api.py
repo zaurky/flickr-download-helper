@@ -348,17 +348,17 @@ def groupFromScratch(api, token, group_id):
         gpath = _get_path(batch)
         file_dump(gpath, content)
 
-    content = []
-    for batch in range(0, maxbatch):
-        gpath = _get_path(batch)
-        content.extend(file_load(gpath))
-
-    gpath =  os.path.join(OPT.groups_full_content_dir, group_id)
-    file_dump(gpath, content)
-
-    for batch in range(0, maxbatch):
-        gpath = _get_path(batch)
-        os.unlink(gpath)
+#    content = []
+#    for batch in range(0, maxbatch):
+#        gpath = _get_path(batch)
+#        content.extend(file_load(gpath))
+#
+#    gpath =  os.path.join(OPT.groups_full_content_dir, group_id)
+#    file_dump(gpath, content)
+#
+#    for batch in range(0, maxbatch):
+#        gpath = _get_path(batch)
+#        os.unlink(gpath)
 
 
 #def getGroupPhotosFromScratch(api, token, group_id, part=1, page=1):
