@@ -253,7 +253,7 @@ def main(api, token):
                         OPT.scan_groups['groups'] = groups
             photos = []
             index = 0
-            for group in groups[0:500]:
+            for group in groups[0:750]:
                 Logger().info("\n== getting group %s (%s) [%s/%s]"%(group['name'], group['nsid'], index, len(groups)))
                 if OPT.scan_groups:
                     l_photos = getGroupPhotos(api, token, group['nsid'], per_page=500)
