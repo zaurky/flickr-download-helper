@@ -121,8 +121,6 @@ def getUserURL(nick):
     return "http://www.flickr.com/photos/%s"%(nick)
 
 def getVideoURL(photo):
-    print photo
-    print photo['owner']
     return "http://www.flickr.com/photos/%s/%s/play/orig/%s/"%(photo['owner'], photo['id'], photo['secret'])
 
 def contentFix(obj):
