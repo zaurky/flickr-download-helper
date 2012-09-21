@@ -4,10 +4,10 @@
 
 WHERE="$FLICKRPHOTODIR/$1"
 
-echo $WHERE
+echo "$WHERE"
 
 echo "finding files (md5)"
-find $WHERE -type f -exec md5sum '{}' ';' > $TMPDIR/doubles.md5sum
+find "$WHERE" -type f -exec md5sum '{}' ';' > $TMPDIR/doubles.md5sum
 
 echo "sorting md5"
 sort $TMPDIR/doubles.md5sum > $TMPDIR/doubles.md5sum.sort
