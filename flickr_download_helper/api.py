@@ -32,7 +32,7 @@ def checkToken(api, token):
     # if we have a token, we check it's still good and put it to None if it's no longer valid
     Logger().debug("debug: calling %s"%('flickr.auth.checkToken'))
     check_request = Flickr.API.Request(method='flickr.auth.checkToken', auth_token=token)
-    check_rsp = api.execute_request(check_request)
+    check_rsp = api.execute_request(check_request, timeout=60)
     # if the request fail, that mean we need to generate the token again
     if check_rsp.code != 200:
         Logger().info("the token is no longer valid")
@@ -43,7 +43,7 @@ def getToken(api, token_file):
     # get the auth frob
     Logger().debug("debug: calling %s"%('flickr.auth.getFrob'))
     frob_request = Flickr.API.Request(method='flickr.auth.getFrob')
-    frob_rsp = api.execute_request(frob_request)
+    frob_rsp = api.execute_request(frob_request, timeout=60)
     if frob_rsp.code == 200:
         frob_rsp_et = xml.etree.ElementTree.parse(frob_rsp)
         if frob_rsp_et.getroot().get('stat') == 'ok':
@@ -64,7 +64,8 @@ def getToken(api, token_file):
     # get the token
     Logger().debug("debug: calling %s"%('flickr.auth.getToken'))
     token_rsp = api.execute_request(Flickr.API.Request(
-        method='flickr.auth.getToken', frob=frob, format='json', nojsoncallback=1)
+        method='flickr.auth.getToken', frob=frob, format='json',
+        nojsoncallback=1), timeout=60
     )
     if token_rsp.code == 200:
         token_rsp_json = simplejson.load(token_rsp)
@@ -146,23 +147,23 @@ def method_info(api, token, method_name):
 def reflect(api, token):
     request = Flickr.API.Request(method='flickr.reflection.getMethods', auth_token=token, format='json', nojsoncallback=1)
     try:
-        response = api.execute_request(request, sign=True)
+        response = api.execute_request(request, sign=True, timeout=60)
     except urllib2.HTTPError, e:
         if e.code == 500:
             # try again
-            response = api.execute_request(request, sign=True)
+            response = api.execute_request(request, sign=True, timeout=60)
         else:
             raise e
     except urllib2.URLError, e:
         if e.errno == 110: # Connection timed out
             # try again
-            response = api.execute_request(request, sign=True)
+            response = api.execute_request(request, sign=True, timeout=60)
         else:
             raise e
     except httplib.BadStatusLine, e:
         # try again, then fail
         try:
-            response = api.execute_request(request, sign=True)
+            response = api.execute_request(request, sign=True, timeout=60)
         except:
             return None
     rsp_json = checkResponse(response, "Error while reflecting (%s)", [])
@@ -251,23 +252,23 @@ def json_request(api, token, method, message, message_params, photo_id=None, pag
             request_args.pop(i)
     Logger().debug("debug: calling %s %s"%(method, str(request_args)))
     try:
-        response = api.execute_request(request, sign=True)
+        response = api.execute_request(request, sign=True, timeout=6)
     except urllib2.HTTPError, e:
         if e.code == 500:
             # try again
-            response = api.execute_request(request, sign=True)
+            response = api.execute_request(request, sign=True, timeout=6)
         else:
             raise e
     except urllib2.URLError, e:
         if e.errno == 110: # Connection timed out
             # try again
-            response = api.execute_request(request, sign=True)
+            response = api.execute_request(request, sign=True, timeout=6)
         else:
             raise e
     except httplib.BadStatusLine, e:
         # try again, then fail
         try:
-            response = api.execute_request(request, sign=True)
+            response = api.execute_request(request, sign=True, timeout=6)
         except:
             return None
     rsp_json = checkResponse(response, message, message_params)
