@@ -23,13 +23,16 @@ import httplib
 import datetime
 
 
-def getThumbURL(photo, format = 's'):
+#################################
+def getPicUrl(photo, format):
     return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg" % (
         photo['farm'], photo['server'], photo['id'], photo['secret'], format)
 
-def getPhotoURL(photo, format = 'b'):
-    return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg" % (
-        photo['farm'], photo['server'], photo['id'], photo['secret'], format)
+def getThumbURL(photo):
+    return getPicUrl(photo, 's')
+
+def getPhotoURL(photo):
+    return getPicUrl(photo, 'b')
 
 def getUserURL(nick):
     return "http://www.flickr.com/photos/%s" % (nick)
@@ -38,73 +41,87 @@ def getVideoURL(photo):
     return "http://www.flickr.com/photos/%s/%s/play/orig/%s/" % (
         photo['owner'], photo['id'], photo['secret'])
 
-def contentFix(obj):
-    if type(obj) == dict:
-        if '_content' in obj: return obj['_content']
-        for k in obj:
-            obj[k] = contentFix(obj[k])
-        return obj
-    elif type(obj) == list or type(obj) == tuple:
-        ret = []
-        for o in obj:
-            ret.append(contentFix(o))
-        return ret
-    else:
-        return obj
+
+SIZES = ['Thumbnail', 'Square', 'Medium', 'Large', 'Original']
+INV_SIZES = list(SIZES)
+INV_SIZES.reverse()
+
+def selectSmallerPhotoSizeURL(sizes):
+    for s in SIZES:
+        for size in sizes:
+            if size['label'] == s:
+                return size['source']
+    return None
+
+def selectBiggerPhotoSizeURL(sizes):
+    for s in INV_SIZES:
+        for size in sizes:
+            if size['label'] == s:
+                return size['source']
+    return None
+
+def selectMediaURL(sizes, media_type):
+    for size in sizes:
+        if size['media'] == media_type:
+            return size['url']
+
+#################################
 
 def json_request2(api, token, method, **kargs):
-    message = '%s'
-    if 'message' in kargs:
-        message = kargs['message']
-
-    message_params = []
-    if 'message_params' in kargs:
-        message_params = kargs['message_params']
+    if token:
+        kargs['auth_token'] = token
 
     if 'content_type' in kargs:
         kargs['extras'] = 'media, url_sq, url_t, url_s, url_m, url_l, url_o, url_z, date_upload, owner_name, last_update'
 
-    if not token:
-        request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, **kargs)
-    else:
-        request = Flickr.API.Request(method=method, auth_token=token, format='json', nojsoncallback=1, **kargs)
+    kargs.update({
+        'method': "flickr.%s" % method,
+        'format': 'json',
+        'nojsoncallback': 1,
+    })
 
-    request_args = request.args.copy()
-    for i in ('auth_token', 'format', 'nojsoncallback', 'method'):
-        if i in request_args:
-            request_args.pop(i)
+    msg = 'error while getting ' + kargs.pop('message', '%s')
+    msg_params = kargs.pop('message_params', [])
 
-    Logger().debug("debug: calling %s %s" % (method, str(request_args)))
+    request = Flickr.API.Request(**kargs)
+    request_args = str(filter(lambda arg:
+        arg not in ('auth_token', 'format', 'nojsoncallback', 'method'),
+        request.args))
+
+    Logger().debug("calling %s(%s)" % (method, request_args))
+
     try:
-        response = api.execute_request(request, sign=True)
+        resp = api.execute_request(request, sign=True)
     except urllib2.HTTPError, e:
         if e.code == 500:
             # try again
             response = api.execute_request(request, sign=True)
         else:
-            raise e
+            raise
     except urllib2.URLError, e:
         if e.errno == 110: # Connection timed out
             # try again
-            response = api.execute_request(request, sign=True)
+            resp = api.execute_request(request, sign=True)
         else:
-            raise e
+            raise
     except httplib.BadStatusLine, e:
         # try again, then fail
         try:
-            response = api.execute_request(request, sign=True)
+            resp = api.execute_request(request, sign=True)
         except:
             return None
 
-    rsp_json = checkResponse(response, message, message_params)
-    return contentFix(rsp_json)
+    return parseResponse(resp, msg, msg_params)
 
-def json_request3(api, token, method, message, message_params, **kargs):
-    return json_request2(api, token, method, message=message, message_params=message_params, **kargs)
+#def json_request(api, token, method, **kargs):
+#    return json_request2(api, token, method, **kargs)
 
 def json_request(api, token, method, message, message_params, photo_id=None, page=None, per_page=None, user_id=None, photoset_id=None, username=None, collection_id=None, content_type=None, min_date=None, tags=None, count=None, min_upload_date=None, min_fave_date=None, group_id=None, url=None, method_name=None, invitation_only=None, sort=None):
     if per_page is None:
         per_page = 100
+
+    method = "flickr.%s" % method
+    print method
     if not token:
         request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=per_page, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only, sort=sort)
     else:
@@ -135,7 +152,7 @@ def json_request(api, token, method, message, message_params, photo_id=None, pag
     for i in ('auth_token', 'format', 'nojsoncallback', 'method'):
         if i in request_args:
             request_args.pop(i)
-    Logger().debug("debug: calling %s %s"%(method, str(request_args)))
+    Logger().debug("calling flickr.%s %s"%(method, str(request_args)))
     try:
         response = api.execute_request(request, sign=True, timeout=6)
     except urllib2.HTTPError, e:
@@ -156,12 +173,22 @@ def json_request(api, token, method, message, message_params, photo_id=None, pag
             response = api.execute_request(request, sign=True, timeout=6)
         except:
             return None
-    rsp_json = checkResponse(response, message, message_params)
-    return contentFix(rsp_json)
+
+    return parseResponse(response, "error while getting " + message, message_params)
+
+#################################
+
+def contentFix(obj):
+    if type(obj) == dict:
+        if '_content' in obj: return obj['_content']
+        return dict(zip(obj.keys(), map(contentFix, obj.values())))
+    elif isinstance(obj, (list, tuple)):
+        return map(contentFix, obj)
+    return obj
 
 def checkResponse(response, message, params):
     if response.code != 200:
-        params.append("error: %i"%response.code)
+        params.append("error: %i" % response.code)
         Logger().warn(message % tuple(params))
         return None
 
@@ -174,26 +201,70 @@ def checkResponse(response, message, params):
 
     return rsp_json
 
-def getPhotoExif(api, token, photo_id):
-    rsp_json = json_request(api, token, 'flickr.photos.getExif', "error while getting photo EXIF for  %s (%s)", [photo_id], photo_id=photo_id)
-    if not rsp_json: return None
+def parseResponse(response, message, params):
+    return contentFix(checkResponse(response, message, params))
 
-    return rsp_json['photo']['exif']
-
-def getPhotoSize(api, token, photo_id):
-    rsp_json = json_request(api, token, 'flickr.photos.getSizes', "error while getting photo size for %s (%s)", [photo_id], photo_id=photo_id)
-    if not rsp_json: return None
-
-    return rsp_json['sizes']['size']
+#################################
 
 def getPhotoInfo(api, token, photo_id):
-    rsp_json = json_request(api, token, 'flickr.photos.getInfo', "error while getting photo info for %s (%s)", [photo_id], photo_id=photo_id)
-    if not rsp_json: return None
+    rsp_json = json_request(api, token, 'photos.getInfo', "photo info for %s (%s)", [photo_id], photo_id=photo_id)
+    return rsp_json.get('photo')
 
-    return rsp_json['photo']
+def getPhotosetInfos(api, token, photoset_id):
+    rsp_json = json_request(api, token, 'photosets.getInfo', "photoset %s informations (%s)", [photoset_id], photoset_id=photoset_id)
+    return rsp_json.get('photoset')
+
+def getCollectionInfo(api, token, collection_id):
+    rsp_json = json_request(api, token, 'collections.getInfo', "informations for collection %s (%s)", [collection_id], collection_id=collection_id)
+    return rsp_json.get('collection')
+
+def getUserFromID(api, user_id, token = None):
+    rsp_json = json_request(api, token, 'people.getInfo', "user informations for %s (%s)", [user_id], user_id=user_id)
+    return rsp_json.get('person')
+
+def getUserFromUsername(api, user_name):
+    rsp_json = json_request(api, None, 'people.findByUsername', "erro while getting user %s from username (%s)", [user_name], username=user_name)
+    return rsp_json.get('user')
+
+def searchGroupByUrl(api, token, group_url):
+    rsp_json = json_request(api, token, 'urls.lookupGroup', "error while searching for group %s (%s)", [group_name], url = group_url, content_type=7)
+    return rsp_json.get('group', [])
+
+def getPhotoExif(api, token, photo_id):
+    rsp_json = json_request(api, token, 'photos.getExif', "photo EXIF for  %s (%s)", [photo_id], photo_id=photo_id)
+    return rsp_json['photo']['exif'] if rsp_json else None
+
+def getPhotoSize(api, token, photo_id):
+    rsp_json = json_request(api, token, 'photos.getSizes', "photo size for %s (%s)", [photo_id], photo_id=photo_id)
+    return rsp_json['sizes']['size'] if rsp_json else None
+
+def getUserGroups(api, token, user_id, page = 1):
+    rsp_json = json_request(api, token, 'people.getPublicGroups', "user %s groups, page %i (%s)", [user_id, page], page=page, user_id=user_id, content_type=7, invitation_only=1)
+    return rsp_json['groups']['group'] if rsp_json else []
+
+def countGroupPhotos(api, token, group_id):
+    rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s (%s)", [group_id], page=1, per_page=1, group_id=group_id)
+    return rsp_json['photos']['total'] if rsp_json else 0
+
+def getContactPhotos(api, token, page = 1):
+    rsp_json = json_request(api, token, 'photos.getContactsPhotos', "contact photos (%s)", [], page=page, count=50)
+    return rsp_json['photos']['photo'] if rsp_json else None
+
+def getUserPhotosets(api, token, user_id):
+    rsp_json = json_request(api, token, 'photosets.getList', "photosets for user %s (%s)", [user_id], user_id=user_id)
+    return rsp_json['photosets']['photoset'] if rsp_json else None
+
+def getContactsPhotos(api, token):
+    rsp_json = json_request(api, token, 'photos.getContactsPhotos', 'error while getting the contacts photos (%s)', [])
+    return rsp_json['photos']['photo'] if rsp_json else []
+
+def getCollectionPhotosets(api, token, collection_id, user_id):
+    rsp_json = json_request(api, token, 'collections.getTree', "photosets for user (%s) collection %s (%s)", [user_id, collection_id], collection_id=collection_id, user_id=user_id, content_type=7)
+    return rsp_json['collections']['collection'][0]['set'] if rsp_json else None
+
 
 def getPhotosetPhotos(api, token, photoset_id, page = 1):
-    rsp_json = json_request(api, token, 'flickr.photosets.getPhotos', "error while getting photos from %s photoset, page %i (%s)", [photoset_id, page], page=page, per_page=100, photoset_id=photoset_id, content_type=7)
+    rsp_json = json_request(api, token, 'photosets.getPhotos', "photos from %s photoset, page %i (%s)", [photoset_id, page], page=page, per_page=100, photoset_id=photoset_id, content_type=7)
     if not rsp_json: return []
 
     content = rsp_json['photoset']['photo']
@@ -202,16 +273,12 @@ def getPhotosetPhotos(api, token, photoset_id, page = 1):
         content.extend(next)
     return content
 
-def countGroupPhotos(api, token, group_id):
-    rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s (%s)", [group_id], page=1, per_page=1, group_id=group_id)
-    return rsp_json['photos']['total']
-
 def getGroupPhotosFromScratch(api, token, group_id, batch=0):
     print "getGroupPhotosFromScratch %s %s" % (group_id, batch)
     content = []
     for spage in range(1, 101):
         page = spage + batch * 100
-        rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s, page %i (%s)", [group_id, page], page=page, per_page=500, group_id = group_id, content_type=7)
+        rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s, page %i (%s)", [group_id, page], page=page, per_page=500, group_id = group_id, content_type=7)
         content.extend(rsp_json['photos']['photo'])
         if page * 500 > int(rsp_json['photos']['total']):
             break
@@ -219,7 +286,7 @@ def getGroupPhotosFromScratch(api, token, group_id, batch=0):
     return content
 
 def groupFromScratch(api, token, group_id):
-    rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s(%s)", [group_id], page=1, per_page=1, group_id=group_id)
+    rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s(%s)", [group_id], page=1, per_page=1, group_id=group_id)
     total = int(rsp_json['photos']['total'])
     print "groupFromScratch %s %s"%(group_id, total)
 
@@ -256,7 +323,7 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = No
         else:
             per_page = 500
 
-    rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s for user %s, page %i (%s)", [group_id, user_id, page], page=page, per_page=per_page, group_id = group_id, user_id = user_id, content_type=7)
+    rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s for user %s, page %i (%s)", [group_id, user_id, page], page=page, per_page=per_page, group_id = group_id, user_id = user_id, content_type=7)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
@@ -312,26 +379,11 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = No
 
     return content
 
-def searchGroup(api, token, group_name):
-    group_url = 'http://www.flickr.com/groups/%s'%group_name
-    rsp_json = json_request(api, token, 'flickr.urls.lookupGroup', "error while searching for group %s (%s)", [group_name], url = group_url, content_type=7)
-    if not rsp_json: return []
-
-    content = rsp_json['group']
-    return content
-
-def getUserGroups(api, token, user_id, page = 1):
-    rsp_json = json_request(api, token, 'flickr.people.getPublicGroups', "error while getting user %s groups, page %i (%s)", [user_id, page], page=page, user_id=user_id, content_type=7, invitation_only=1)
-    if not rsp_json: return []
-
-    content = rsp_json['groups']['group']
-    return content
-
 def getUserPhotos(api, token, user_id, min_upload_date = None, page = 1, limit=None):
     per_page=100
     if limit is not None:
         per_page=limit
-    rsp_json = json_request(api, token, 'flickr.people.getPhotos', "error while getting %s's photos page %i (%s)", [user_id, page], page=page, per_page=per_page, user_id=user_id, content_type=7, min_upload_date=min_upload_date)
+    rsp_json = json_request(api, token, 'people.getPhotos', "%s's photos page %i (%s)", [user_id, page], page=page, per_page=per_page, user_id=user_id, content_type=7, min_upload_date=min_upload_date)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
@@ -345,32 +397,13 @@ def getUserPhotos(api, token, user_id, min_upload_date = None, page = 1, limit=N
     return content
 
 def getUserLastPhotos(api, token, user_id, since, page = 1):
-    rsp_json = json_request(api, token, 'flickr.photos.recentlyUpdated', "error while getting last %s's photos page %i (%s)", [user_id, page], page=page, per_page=100, user_id=user_id, content_type=7, min_date=since)
+    rsp_json = json_request(api, token, 'photos.recentlyUpdated', "last %s's photos page %i (%s)", [user_id, page], page=page, per_page=100, user_id=user_id, content_type=7, min_date=since)
     if not rsp_json: return []
     content = rsp_json['photos']['photo']
     if int(len(content) + (page-1)*100) != int(rsp_json['photos']['total']):
         next = getUserPhotos(api, token, user_id, page+1)
         content.extend(next)
     return content
-
-def selectSmallerPhotoSizeURL(sizes):
-    for s in ['Thumbnail', 'Square', 'Medium', 'Large', 'Original']:
-        for size in sizes:
-            if size['label'] == s:
-                return size['source']
-    return None
-
-def selectBiggerPhotoSizeURL(sizes):
-    for s in ['Original', 'Large', 'Medium', 'Square', 'Thumbnail']:
-        for size in sizes:
-            if size['label'] == s:
-                return size['source']
-    return None
-
-def selectMediaURL(sizes, media_type):
-    for size in sizes:
-        if size['media'] == media_type:
-            return size['url']
 
 def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb = False):
     urls = {}
@@ -414,34 +447,37 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb = False):
         i += 1
     return urls
 
-def searchPhotos(api, token, params, page=1):
-    request = Flickr.API.Request(method='flickr.photos.search', auth_token=token, format='json', nojsoncallback=1, per_page=100, page=page)
-    for p in params:
-        request.args[p] = params[p]
-    try:
-        response = api.execute_request(request, sign=True)
-    except urllib2.HTTPError, e:
-        if e.code == 500:
-            # try again
-            response = api.execute_request(request, sign=True)
-        else:
-            raise e
-    except httplib.BadStatusLine, e:
-        # try again, then fail
-        try:
-            response = api.execute_request(request, sign=True)
-        except:
-            return None
-    rsp_json = checkResponse(response, "%s", [])
-    ret = contentFix(rsp_json)
-    content = ret['photos']['photo']
-    if int(len(ret) + (page-1)*100) != int(rsp_json['photos']['total']):
-        next = searchPhotos(api, token, params, page+1)
-        content.extend(next)
-    return content
+#def searchPhotos(api, token, params, page=1):
+#    request = Flickr.API.Request(method='flickr.photos.search', auth_token=token, format='json', nojsoncallback=1, per_page=100, page=page)
+#    for p in params:
+#        request.args[p] = params[p]
+#    try:
+#        response = api.execute_request(request, sign=True)
+#    except urllib2.HTTPError, e:
+#        if e.code == 500:
+#            # try again
+#            response = api.execute_request(request, sign=True)
+#        else:
+#            raise e
+#    except httplib.BadStatusLine, e:
+#        # try again, then fail
+#        try:
+#            response = api.execute_request(request, sign=True)
+#        except:
+#            return None
+#    rsp_json = checkResponse(response, "%s", [])
+#    ret = contentFix(checkResponse(response, "%s", []))
+#    content = ret['photos']['photo']
+#    if int(len(ret) + (page-1)*100) != int(rsp_json['photos']['total']):
+#        next = searchPhotos(api, token, params, page+1)
+#        content.extend(next)
+#    return content
+
+def searchGroup(api, token, group_name):
+    return searchGroupByUrl(api, token, 'http://www.flickr.com/groups/%s' % group_name)
 
 def getPhotosByTag(api, token, user_id, tags, page=1):
-    rsp_json = json_request(api, token, 'flickr.photos.search', "error while searching photos (%s)", [], user_id=user_id, tags=tags, content_type=7, page=page)
+    rsp_json = json_request(api, token, 'photos.search', "error while searching photos (%s)", [], user_id=user_id, tags=tags, content_type=7, page=page)
     if not rsp_json: return None
 
     content = rsp_json['photos']['photo']
@@ -450,38 +486,8 @@ def getPhotosByTag(api, token, user_id, tags, page=1):
         content.extend(next)
     return content
 
-def getContactPhotos(api, token, page = 1):
-    rsp_json = json_request(api, token, 'flickr.photos.getContactsPhotos', "error while getting contact photos (%s)", [], page=page, count=50)
-    if not rsp_json: return None
-
-    return rsp_json['photos']['photo']
-
-def getPhotosetInfos(api, token, photoset_id):
-    rsp_json = json_request(api, token, 'flickr.photosets.getInfo', "error while getting photoset %s informations (%s)", [photoset_id], photoset_id=photoset_id)
-    if not rsp_json: return None
-
-    return rsp_json['photoset']
-
-def getUserPhotosets(api, token, user_id):
-    rsp_json = json_request(api, token, 'flickr.photosets.getList', "error while getting photosets for user %s (%s)", [user_id], user_id=user_id)
-    if not rsp_json: return None
-
-    return rsp_json['photosets']['photoset']
-
-def getCollectionInfo(api, token, collection_id):
-    rsp_json = json_request(api, token, 'flickr.collections.getInfo', "error while getting informations for collection %s (%s)", [collection_id], collection_id=collection_id)
-    if not rsp_json: return None
-
-    return rsp_json['collection']
-
-def getCollectionPhotosets(api, token, collection_id, user_id):
-    rsp_json = json_request(api, token, 'flickr.collections.getTree', "error while getting photosets for user (%s) collection %s (%s)", [user_id, collection_id], collection_id=collection_id, user_id=user_id, content_type=7)
-    if not rsp_json: return None
-
-    return rsp_json['collections']['collection'][0]['set']
-
 def getContactList(api, token, page = 1):
-    rsp_json = json_request(api, token, 'flickr.contacts.getList', 'error while getting the contact list (%s)', [], page=page, sort='time')
+    rsp_json = json_request(api, token, 'contacts.getList', 'error while getting the contact list (%s)', [], page=page, sort='time')
     if not rsp_json: return []
 
     if 'contact' not in rsp_json['contacts']: return []
@@ -492,7 +498,7 @@ def getContactList(api, token, page = 1):
     return content
 
 def getUserFavorites(api, token, user_id, page = 1, one_shot = False, per_page = 100, min_fave_date = None):
-    rsp_json = json_request(api, token, 'flickr.favorites.getList', 'error while getting %s favorites (%s)', [user_id], user_id=user_id, page=page, content_type=7, per_page=per_page, min_fave_date=min_fave_date)
+    rsp_json = json_request(api, token, 'favorites.getList', 'error while getting %s favorites (%s)', [user_id], user_id=user_id, page=page, content_type=7, per_page=per_page, min_fave_date=min_fave_date)
     if not rsp_json: return []
     content = rsp_json['photos']['photo']
     if not one_shot:
@@ -505,26 +511,8 @@ def getUserFavorites(api, token, user_id, page = 1, one_shot = False, per_page =
                 break
     return content
 
-def getContactsPhotos(api, token):
-    rsp_json = json_request(api, token, 'flickr.photos.getContactsPhotos', 'error while getting the contacts photos (%s)', [])
-    if not rsp_json: return []
-
-    return rsp_json['photos']['photo']
-
-def getUserFromID(api, user_id, token = None):
-    rsp_json = json_request(api, token, 'flickr.people.getInfo', "error while getting user informations for %s (%s)", [user_id], user_id=user_id)
-    if not rsp_json: return None
-
-    return rsp_json['person']
-
-def getUserFromUsername(api, user_name):
-    rsp_json = json_request(api, None, 'flickr.people.findByUsername', "erro while getting user %s from username (%s)", [user_name], username=user_name)
-    if not rsp_json: return None
-
-    return rsp_json['user']
-
 def getUserFromUrl(api, url, from_nick = False):
-    Logger().debug("debug: calling %s"%('flickr.urls.lookupUser'))
+    Logger().debug("calling %s" % ('urls.lookupUser'))
     request = Flickr.API.Request(method='flickr.urls.lookupUser', url=url, format='json', nojsoncallback=1)
     response = api.execute_request(request, sign=True)
     if response.code != 200:
