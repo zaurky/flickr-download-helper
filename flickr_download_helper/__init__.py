@@ -12,7 +12,6 @@ import sys
 import os
 import re
 import time
-# getPhotosetPhotos, getPhotoSize, getCollectionInfo, getAllPreviousUsers, downloadPhotoFromID
 from flickr_download_helper.api import getPhotoInfo, getUserPhotos, getUserGroups
 from flickr_download_helper.api import getPhotoURLFlickr, getPhotosetInfos, getUserFromID, getUserPhotosets, getGroupPhotos
 from flickr_download_helper.api import getUserFromUsername, getUserFromUrl, getUserFromNick, readFile, downloadPhotoFromURL, getPhotosByTag
@@ -24,14 +23,14 @@ from flickr_download_helper.types import FDHPR
 from flickr_download_helper.utils import extends
 from flickr_download_helper.config import OptReader, OPT, OptConfigReader, INS
 from flickr_download_helper.proxy import FDHProxySettings
-from flickr_download_helper.existing import Existing #, FileWrite
+from flickr_download_helper.existing import Existing
 from flickr_download_helper.existing import file_load, file_dump
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
 import datetime
 from datetime import date
 import simplejson as json
-# from flickr_download_helper.database import SaveAll
+
 
 def main_init(read_command_line = True):
     config = OptConfigReader()
@@ -53,10 +52,6 @@ def main_init(read_command_line = True):
     proxy.setValues(OPT)
     proxy.activate()
 
-    # init of the log all database
-#    logall_db = SaveAll()
-#    logall_db.init()
-
     # init of the flickr api
     r = initialisationFlickrApi(OPT)
     if not isinstance(r, (list, tuple)) or len(r) != 2:
@@ -66,6 +61,7 @@ def main_init(read_command_line = True):
         raise Exception("Couldn't init flickr api %s"%(str(r)))
     api, token = r
     return (api, token)
+
 
 def main(api, token):
     photo_id2destination = {}
@@ -126,16 +122,11 @@ def main(api, token):
             OPT.user_id = None
             Logger().error("error parsing OPT.get_url : %s"%(url[0]))
 
-#    if OPT.scan_groups:
-#        INS['put_group_in_session'] = True
-
     if OPT.photo_id_in_file:
         # work on a list of photos ids
         content = readFile(OPT.photo_id_in_file)
         content = content.split("\n")
         while '' in content: content.remove('')
-        # user_id NOT
-        # content = Existing().grepDontExists(content)
         OPT.photo_ids = content
 
     if OPT.photoset_id:
@@ -337,7 +328,6 @@ def main(api, token):
                 Logger().error(str(e))
                 Logger().error(dir(e))
                 Logger().error(e.message)
-                #Logger().print_tb(e)
                 raise e
             except Exception, e:
                 Logger().error(str(e))
@@ -430,6 +420,7 @@ def main(api, token):
         existing.backupToFile()
     Logger().info("\n== end")
     return (0, total)
+
 
 def getRecentlyUploadedContacts(api, token):
     owners = []

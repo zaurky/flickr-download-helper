@@ -4,6 +4,7 @@ import sys
 import re
 import os
 
+
 #################### UTILITIES
 def waitFor(message, *attr):
     if not OPT.interactive:
@@ -23,6 +24,7 @@ def waitFor(message, *attr):
     if line.lower() == 'y' or line.lower() == 'yes':
         return True
     return False
+
 
 def extends(orig, ext):
     if type(orig) != dict or type(ext) != dict:
@@ -45,4 +47,3 @@ def get_video(file):
             print m.group(2)
     file.close()
     return True
-

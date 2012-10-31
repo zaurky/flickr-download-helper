@@ -24,5 +24,3 @@ class DownloadFile(Singleton):
                     raise e
         self.file.write("%s\n"%(content.encode('utf8')))
         self.file.flush()
-
-

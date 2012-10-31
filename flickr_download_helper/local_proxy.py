@@ -24,4 +24,3 @@ class LocalProxy():
                 photo[field] = url
             ret.append(photo)
         return ret
-

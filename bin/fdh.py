@@ -36,4 +36,3 @@ if __name__ == "__main__":
                 print info[1]
                 traceback.print_tb(info[2])
         sys.exit(-1)
-

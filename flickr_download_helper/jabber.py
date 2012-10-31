@@ -1,7 +1,7 @@
 from jabberbot import JabberBot, botcmd
 import datetime
 import threading
-import time 
+import time
 import sys, time
 import re
 import os
@@ -126,7 +126,7 @@ class LogJabberBot(JabberBot):
         self.log("closing log file")
         self._file.close()
         sys.exit()
-    
+
     def log(self, s):
         print self.__class__.__name__, datetime.datetime.now().strftime('%H:%M'), ':', s
 

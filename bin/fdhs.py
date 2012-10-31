@@ -29,7 +29,6 @@ def getContactPhotos(api, token):
                 Logger().error("getting %s failed (1: %s)"%(OPT.user_id, ret))
         if OPT.smart and count == 0:
             if INS['failure_level'] == 0:
-                # and OPT.user_id not in OPT.not_smart:
                 Logger().info("stopping there, the most recent user to upload didn't upload anything (%s)"%OPT.user_id)
                 return False
             INS['failure_level'] -= 1
@@ -170,7 +169,4 @@ if __name__ == "__main__":
     OPT.daily_in_dir = True
 
     reactor.callLater(1, getContactsPhotos, api, token)
-    #reactor.add
     reactor.run()
-
-

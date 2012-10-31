@@ -12,7 +12,6 @@ from flickr_download_helper import exif
 import Flickr.API
 import xml.etree.ElementTree
 import sys
-# import traceback
 import os
 import re
 import md5
@@ -347,38 +346,6 @@ def groupFromScratch(api, token, group_id):
         gpath = _get_path(batch)
         file_dump(gpath, content)
 
-#    content = []
-#    for batch in range(0, maxbatch):
-#        gpath = _get_path(batch)
-#        content.extend(file_load(gpath))
-#
-#    gpath =  os.path.join(OPT.groups_full_content_dir, group_id)
-#    file_dump(gpath, content)
-#
-#    for batch in range(0, maxbatch):
-#        gpath = _get_path(batch)
-#        os.unlink(gpath)
-
-
-#def getGroupPhotosFromScratch(api, token, group_id, part=1, page=1):
-#    print "getGroupPhotosFromScratch %s %s"%(group_id, page)
-#    rsp_json = json_request(api, token, 'flickr.groups.pools.getPhotos', "error while getting photos from group %s, page %i (%s)", [group_id,  page], page=page, per_page=500, group_id = group_id, content_type=7)
-#    if not rsp_json: return []
-#
-#    content = rsp_json['photos']['photo']
-#    total = rsp_json['photos']['total']
-#
-#    if len(content) == 500:
-#        total, next = getGroupPhotosFromScratch(api, token, group_id, page+1)
-#        content.extend(next)
-#    return total, content
-#
-#def groupFromScratch(api, token, group_id, part=1):
-#    total, content = getGroupPhotosFromScratch(api, token, group_id)
-#
-#    gpath = os.path.join(OPT.groups_full_content_dir, "%s_%s" % (group_id, part))
-#    file_dump(gpath, content)
-
 def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = None):
     if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session']:
         if INS['groups'].has_key(group_id):
@@ -549,8 +516,6 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb = False):
                         url = selectMediaURL(sizes, photo['media'])
                         Logger().info("Get the video %s"%(url))
                         DownloadFile().write("%s video %s"%(str(datetime.datetime.now()), url))
-                        #url = getVideoURL(photo)
-                        #Logger().info("Download %s"%(url))
                     elif 'video' in photo:
                         Logger().info("Get the video %s"%(photo['urls']['url'][0]))
                         url = selectBiggerPhotoSizeURL(sizes)

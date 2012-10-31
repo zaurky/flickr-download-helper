@@ -30,4 +30,3 @@ class Redirect_Page:
 
     def __init__(self, url):
         self.url = url
-
