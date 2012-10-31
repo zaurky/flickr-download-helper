@@ -11,27 +11,24 @@ def method_info(api, token, method_name):
 
 def reflect(api, token):
     request = Flickr.API.Request(method='flickr.reflection.getMethods', auth_token=token, format='json', nojsoncallback=1)
+    kargs = {'sign': True, 'timeout': 60}
     try:
-        response = api.execute_request(request, sign=True, timeout=60)
+        response = api.execute_request(request, **kargs)
     except urllib2.HTTPError, e:
         if e.code == 500:
-            # try again
-            response = api.execute_request(request, sign=True, timeout=60)
+            response = api.execute_request(request, **kargs)
         else:
-            raise e
+            raise
     except urllib2.URLError, e:
         if e.errno == 110: # Connection timed out
-            # try again
-            response = api.execute_request(request, sign=True, timeout=60)
+            response = api.execute_request(request, **kargs)
         else:
-            raise e
+            raise
     except httplib.BadStatusLine, e:
-        # try again, then fail
         try:
-            response = api.execute_request(request, sign=True, timeout=60)
+            response = api.execute_request(request, **kargs)
         except:
             return None
 
-    rsp_json = checkResponse(response, "Error while reflecting (%s)", [])
-    rsp_json = contentFix(rsp_json)
+    rsp_json = contentFix(checkResponse(response, "Error while reflecting (%s)", [])
     return rsp_json['methods']['method']
