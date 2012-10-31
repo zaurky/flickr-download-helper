@@ -29,7 +29,7 @@ def saveToken(token, token_file):
 
 def checkToken(api, token):
     # if we have a token, we check it's still good and put it to None if it's no longer valid
-    Logger().debug("debug: calling %s"%('flickr.auth.checkToken'))
+    Logger().debug("debug: calling %s" % ('flickr.auth.checkToken'))
     check_request = Flickr.API.Request(method='flickr.auth.checkToken', auth_token=token)
     check_rsp = api.execute_request(check_request, timeout=60)
     # if the request fail, that mean we need to generate the token again
@@ -40,7 +40,7 @@ def checkToken(api, token):
 
 def getToken(api, token_file):
     # get the auth frob
-    Logger().debug("debug: calling %s"%('flickr.auth.getFrob'))
+    Logger().debug("debug: calling %s" % ('flickr.auth.getFrob'))
     frob_request = Flickr.API.Request(method='flickr.auth.getFrob')
     frob_rsp = api.execute_request(frob_request, timeout=60)
     if frob_rsp.code == 200:
@@ -50,10 +50,11 @@ def getToken(api, token_file):
         else:
             raise Exception("get frob stat != OK")
     else:
-        raise Exception("get frob http code != 200 (%s)"%(str(frob_rsp.code)))
+        raise Exception("get frob http code != 200 (%s)" % (str(frob_rsp.code)))
 
     # flickr url to allow this application
     auth_url = api.get_authurl('read', frob=frob)
+
     # WARNING to what to do in non interactive mode
     Logger().info("auth me:  %s" % (auth_url))
     input = raw_input("done [y]: ")
@@ -61,11 +62,12 @@ def getToken(api, token_file):
         sys.exit()
 
     # get the token
-    Logger().debug("debug: calling %s"%('flickr.auth.getToken'))
+    Logger().debug("debug: calling %s" % ('flickr.auth.getToken'))
     token_rsp = api.execute_request(Flickr.API.Request(
         method='flickr.auth.getToken', frob=frob, format='json',
         nojsoncallback=1), timeout=60
     )
+
     if token_rsp.code == 200:
         token_rsp_json = simplejson.load(token_rsp)
         if token_rsp_json['stat'] == 'ok':
@@ -77,6 +79,7 @@ def getToken(api, token_file):
             raise Exception("can't get the token! err = %s"%(str(token_rsp_json['message'])))
     else:
         raise Exception("can't get the token! err code = %s"%(str(token_rsp.code)))
+
     return token
 
 def loadToken(api, token_file):
@@ -86,10 +89,12 @@ def loadToken(api, token_file):
     token = readFile(token_file)
 
     # check if the token is still ok
-    if token: token = checkToken(api, token)
+    if token:
+        token = checkToken(api, token)
 
     # if we don't have any token, we generate one
-    if token == None: token = getToken(api, token_file)
+    if not token:
+        token = getToken(api, token_file)
 
     return token
 
@@ -103,24 +108,29 @@ def initialisationFlickrApi(opt):
     try:
         token = loadToken(api, opt.token_file)
     except urllib2.URLError, e:
-        if opt.proxy: Logger().warn("please check your proxy parameters (%s)"%e.reason[1])
-        else: Logger().warn(e.reason[1])
+        if opt.proxy:
+            Logger().warn("please check your proxy parameters (%s)" % e.reason[1])
+        else:
+            Logger().warn(e.reason[1])
         return 6
 
     return (api, token)
 
 ###########################################################
 def getThumbURL(photo, format = 's'):
-    return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg"%(photo['farm'], photo['server'], photo['id'], photo['secret'], format)
+    return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg" % (
+        photo['farm'], photo['server'], photo['id'], photo['secret'], format)
 
 def getPhotoURL(photo, format = 'b'):
-    return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg"%(photo['farm'], photo['server'], photo['id'], photo['secret'], format)
+    return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg" % (
+        photo['farm'], photo['server'], photo['id'], photo['secret'], format)
 
 def getUserURL(nick):
-    return "http://www.flickr.com/photos/%s"%(nick)
+    return "http://www.flickr.com/photos/%s" % (nick)
 
 def getVideoURL(photo):
-    return "http://www.flickr.com/photos/%s/%s/play/orig/%s/"%(photo['owner'], photo['id'], photo['secret'])
+    return "http://www.flickr.com/photos/%s/%s/play/orig/%s/" % (
+        photo['owner'], photo['id'], photo['secret'])
 
 def contentFix(obj):
     if type(obj) == dict:
@@ -138,8 +148,7 @@ def contentFix(obj):
 
 def method_info(api, token, method_name):
     rsp_json = json_request(api, token, 'flickr.reflection.getMethodInfo', "error while getting method info for %s (%s)", [method_name], method_name=method_name)
-    if not rsp_json: return None
-    return rsp_json
+    return rsp_json if rsp_json else None
 
 def reflect(api, token):
     request = Flickr.API.Request(method='flickr.reflection.getMethods', auth_token=token, format='json', nojsoncallback=1)
@@ -163,6 +172,7 @@ def reflect(api, token):
             response = api.execute_request(request, sign=True, timeout=60)
         except:
             return None
+
     rsp_json = checkResponse(response, "Error while reflecting (%s)", [])
     rsp_json = contentFix(rsp_json)
     return rsp_json['methods']['method']
@@ -171,6 +181,7 @@ def json_request2(api, token, method, **kargs):
     message = '%s'
     if 'message' in kargs:
         message = kargs['message']
+
     message_params = []
     if 'message_params' in kargs:
         message_params = kargs['message_params']
@@ -187,7 +198,8 @@ def json_request2(api, token, method, **kargs):
     for i in ('auth_token', 'format', 'nojsoncallback', 'method'):
         if i in request_args:
             request_args.pop(i)
-    Logger().debug("debug: calling %s %s"%(method, str(request_args)))
+
+    Logger().debug("debug: calling %s %s" % (method, str(request_args)))
     try:
         response = api.execute_request(request, sign=True)
     except urllib2.HTTPError, e:
@@ -208,6 +220,7 @@ def json_request2(api, token, method, **kargs):
             response = api.execute_request(request, sign=True)
         except:
             return None
+
     rsp_json = checkResponse(response, message, message_params)
     return contentFix(rsp_json)
 
