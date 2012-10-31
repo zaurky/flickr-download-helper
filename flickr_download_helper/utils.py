@@ -47,3 +47,14 @@ def get_video(file):
             print m.group(2)
     file.close()
     return True
+
+
+def readFile(filename):
+    if os.path.exists(filename):
+        f = open(filename, "rb")
+        ret = f.read()
+        f.close()
+        return ret
+    else:
+        Logger().error("file not found %s" % filename)
+    return None
