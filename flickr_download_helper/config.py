@@ -20,7 +20,7 @@ class Singleton(object):
 class InternalSession(Singleton):
     _internal = {'groups':{}, 'temp_groups':{}}
     def has_key(self, k): return k in self._internal
-    def get(self, k): return self._internal[k]
+    def get(self, k, default=None): return self._internal.get(k, default)
     def set(self, k, v): self._internal[k] = v
     def delitem(self, k): del self._internal[k]
     def __len__(self): return len(self._internal)
