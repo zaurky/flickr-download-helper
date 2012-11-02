@@ -3,6 +3,7 @@ from flickr_download_helper.utils import readFile
 import Flickr.API
 import xml.etree.ElementTree
 import simplejson
+import urllib2
 
 
 def saveToken(token, token_file):
@@ -15,8 +16,9 @@ def saveToken(token, token_file):
 def checkToken(api, token):
     # if we have a token, we check it's still good and put it to None if it's no longer valid
     Logger().debug("debug: calling %s" % ('flickr.auth.checkToken'))
-    check_request = Flickr.API.Request(method='flickr.auth.checkToken', auth_token=token)
-    check_rsp = api.execute_request(check_request, timeout=60)
+    check_request = Flickr.API.Request(
+        method='flickr.auth.checkToken', auth_token=token, timeout=60)
+    check_rsp = api.execute_request(check_request)
     # if the request fail, that mean we need to generate the token again
     if check_rsp.code != 200:
         Logger().info("the token is no longer valid")
@@ -27,8 +29,8 @@ def checkToken(api, token):
 def getToken(api, token_file):
     # get the auth frob
     Logger().debug("debug: calling %s" % ('flickr.auth.getFrob'))
-    frob_request = Flickr.API.Request(method='flickr.auth.getFrob')
-    frob_rsp = api.execute_request(frob_request, timeout=60)
+    frob_request = Flickr.API.Request(method='flickr.auth.getFrob', timeout=60)
+    frob_rsp = api.execute_request(frob_request)
     if frob_rsp.code == 200:
         frob_rsp_et = xml.etree.ElementTree.parse(frob_rsp)
         if frob_rsp_et.getroot().get('stat') == 'ok':
@@ -51,8 +53,8 @@ def getToken(api, token_file):
     Logger().debug("debug: calling %s" % ('flickr.auth.getToken'))
     token_rsp = api.execute_request(Flickr.API.Request(
         method='flickr.auth.getToken', frob=frob, format='json',
-        nojsoncallback=1), timeout=60
-    )
+        nojsoncallback=1, timeout=60
+    ))
 
     if token_rsp.code == 200:
         token_rsp_json = simplejson.load(token_rsp)
