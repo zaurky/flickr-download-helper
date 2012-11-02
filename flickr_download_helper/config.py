@@ -65,56 +65,32 @@ class Options(Singleton):
                 contact_to_remove_60,
                 contact_to_remove_30,
             ]
-    contact_to_remove = '/root/fdh/files/to_remove'
+    contact_to_remove = contact_to_remove_180
 
     database_file = os.path.join(configuration_dir, 'db', 'fdh.db')
     database_logall_file = os.path.join(configuration_dir, 'db', 'logall.db')
 
-    user_id = None
     contact_ids = []
-    my_id = None
-    url = None
-    get_url = None
-    nick = None
-    photoset_id = None
-    collection_id = None
-    photo_id_in_file = None
-    photo_ids = None
-    tags = None
-    username = None
-    sort_by_user = True
-    sort_by_photoset = False
-    retrieve = False
-    force = False
-    interactive = True
-    new_in_dir = False
-    daily_in_dir = False
-    fast_photo_url = False
-    restore_photo_url = False
-    only_backup_photo_url = False
+    user_id = my_id = url = get_url = nick = photoset_id = None
+    collection_id = photo_id_in_file = photo_ids = tags = None
+    username = proxy_user = proxy_pass = None
+    proxy = since = loop = group_id = downloads_file = None
+    jabber_last = only_collect = None
+
+    sort_by_user = interactive = True
+    sort_by_photoset = retrieve = force = new_in_dir = False
+    daily_in_dir = fast_photo_url = restore_photo_url = False
+    only_backup_photo_url = smart = try_from_groups = debug = False
+    force_group_verbose = scan_groups = group_from_cache = False
+
     sleep_time = 1
     photo_id2destination = {}
-    proxy = None
     proxy_port = 80
-    proxy_user = None
-    proxy_pass = None
-    debug=False
     logger='console'
     config_file='/etc/fdh/fdh.ini'
-    since = None
-    loop = None
-    smart = False
     not_smart = []
     check_md5 = []
     skiped_group = []
-    group_id = None
-    try_from_groups = False
-    force_group_verbose = False
-    downloads_file = None
-    jabber_last = None
-    only_collect = None
-    scan_groups = False
-    group_from_cache = False
     check_old_contacts = 0
 
     user_hash = {}
@@ -290,7 +266,7 @@ class OptReader(Singleton):
         # process options
         if script != 'getContacts.py':
             print "\n== process options"
-            if len(opts) == 0:
+            if not opts:
                 print self.__doc__
                 return 1
 
@@ -374,12 +350,12 @@ class OptReader(Singleton):
             print "--daily_in_dir can only be set when --retrieve is also set : putting daily_in_dir to False"
             opt.daily_in_dir = False
 
-        if opt.since != None:
-            if opt.since.find('last') == 0:
+        if opt.since:
+            if opt.since.startswith('last'):
                 since = opt.since.replace('last', '')
-                if since.find('h') != -1:
+                if 'h' in since:
                     opt.since = int(time.time()) - 3600 * int(since.replace('h', ''))
-                elif since.find('d') != -1:
+                elif 'd' in since:
                     opt.since = int(time.time()) - 3600*24 * int(since.replace('d', ''))
         if opt.group_id and not opt.user_id and not opt.url and not opt.nick and not opt.username:
             print "for the moment you must put a user when asking for a group!"
