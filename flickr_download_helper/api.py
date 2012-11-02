@@ -20,7 +20,7 @@ import marshal
 import simplejson
 import urllib2
 import httplib
-import datetime
+from datetime import datetime
 
 DEFAULT_PERPAGE = 100
 
@@ -334,9 +334,9 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
             l_photos.append(i)
 
     l_photos = dict(map(lambda x: (x['id'], x), l_photos)).values()
-    print len(l_photos)
-    print g_size
-    print len(content)
+
+    Logger().debug("getGroupPhotos %d %d %d" % (len(l_photos), g_size, len(content)))
+
     if len(l_photos) >= g_size or len(content) == 0:
         return _cache_group(group_id, l_photos)
 
@@ -353,9 +353,7 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
     return content
 
 def getUserPhotos(api, token, user_id, min_upload_date=None, page=1, limit=None):
-    per_page = DEFAULT_PERPAGE
-    if limit is not None:
-        per_page = limit
+    per_page = DEFAULT_PERPAGE if not limit else limit
 
     kargs = {
         'page': page,
@@ -367,34 +365,41 @@ def getUserPhotos(api, token, user_id, min_upload_date=None, page=1, limit=None)
     if min_upload_date:
         kargs['min_upload_date'] = min_upload_date
 
-    rsp_json = json_request(
-        api, token, 'people.getPhotos', "%s's photos page %i", [user_id, page], **kargs)
+    rsp_json = json_request(api, token, 'people.getPhotos',
+        "%s's photos page %i", [user_id, page], **kargs)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
+    total = int(rsp_json['photos']['total'])
 
     if limit is not None:
         return content
 
-    if int(len(content) + (page-1)*100) != int(rsp_json['photos']['total']):
-        next = getUserPhotos(api, token, user_id, min_upload_date, page+1)
-        content.extend(next)
+    if len(content) + (page - 1) * per_page != total:
+        content.extend(getUserPhotos(api, token, user_id, min_upload_date, page+1))
+
     return content
 
-def getUserLastPhotos(api, token, user_id, since, page = 1):
-    rsp_json = json_request(api, token, 'photos.recentlyUpdated', "last %s's photos page %i", [user_id, page], page=page, per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7, min_date=since)
+def getUserLastPhotos(api, token, user_id, since, page=1):
+    rsp_json = json_request(api, token, 'photos.recentlyUpdated',
+        "last %s's photos page %i", [user_id, page],
+        page=page, per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7, min_date=since)
     if not rsp_json: return []
+
     content = rsp_json['photos']['photo']
-    if int(len(content) + (page-1)*DEFAULT_PERPAGE) != int(rsp_json['photos']['total']):
-        next = getUserPhotos(api, token, user_id, page+1)
-        content.extend(next)
+    total = int(rsp_json['photos']['total'])
+
+    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
+        content.extend(getUserPhotos(api, token, user_id, page+1))
+
     return content
 
-def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb = False):
+def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
     urls = {}
-    i = 1
+
     length = len(photos)
-    for photo in photos:
+
+    for (counter, photo) in enumerate(photos):
         if thumb and 'url_sq' in photo:
             url = photo['url_sq']
         elif not thumb and 'url_o' in photo:
@@ -404,32 +409,31 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb = False):
         elif not thumb and 'url_m' in photo:
             url = photo['url_m']
         else:
-            Logger().info("%i/%i get photo size"%(i, length))
-            if fast_photo_url and ('media' in photo and photo['media'] == 'photo' or 'media' not in photo):
-                if thumb:
-                    url = getThumbURL(photo)
-                else:
-                    url = getPhotoURL(photo)
+            Logger().info("%i/%i get photo size" % (counter + 1, length))
+            if fast_photo_url and (photo.get('media') == 'photo' or 'media' not in photo):
+                url = getThumbURL(photo) if thumb else getPhotoURL(photo)
             else:
                 sizes = getPhotoSize(api, token, photo['id'])
                 if sizes == None:
-                    Logger().error("can't get photo size for %s (the photo is not going to be retrieve)"%photo['id'])
+                    Logger().error("can't get photo size for %s (the photo is not going to be retrieve)" % photo['id'])
                     continue
+
                 if thumb:
                     url = selectSmallerPhotoSizeURL(sizes)
                 else:
                     if 'media' in photo and photo['media'] != 'photo':
                         url = selectMediaURL(sizes, photo['media'])
-                        Logger().info("Get the video %s"%(url))
-                        DownloadFile().write("%s video %s"%(str(datetime.datetime.now()), url))
+                        Logger().info("Get the video %s" % (url))
+                        DownloadFile().write("%s video %s" % (str(datetime.now()), url))
                     elif 'video' in photo:
-                        Logger().info("Get the video %s"%(photo['urls']['url'][0]))
+                        Logger().info("Get the video %s" % (photo['urls']['url'][0]))
                         url = selectBiggerPhotoSizeURL(sizes)
-                        DownloadFile().write("%s video %s"%(str(datetime.datetime.now()), url))
+                        DownloadFile().write("%s video %s" % (str(datetime.now()), url))
                     else:
                         url = selectBiggerPhotoSizeURL(sizes)
+
         urls[photo['id']] = url
-        i += 1
+
     return urls
 
 def searchGroup(api, token, group_name):
