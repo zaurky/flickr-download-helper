@@ -22,7 +22,6 @@ class fillDir(object):
             if os.path.isdir(filename):
                 os.path.walk(filename, self.fillDir, [self.api, self.token])
             elif os.path.isfile(filename):
-                #pass
                 fillFile(self.api, self.token, filename, count, total_count)
             count += 1
 
@@ -144,5 +143,3 @@ def fillFile(api, token, file_path, count = None, total_count = None, info = Non
         Logger().print_tb(e)
         Logger().error(e)
         Logger().warn("Can't fill photo %s"%(photoid))
-
-

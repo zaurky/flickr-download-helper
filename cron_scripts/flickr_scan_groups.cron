@@ -4,7 +4,7 @@ export LANG='fr_FR.UTF-8'
 . /etc/fdh/fdh.sh
 
 #OPTIONS=" -d -r --check_n_old_contacts 150 --scan_groups --dw "
-OPTIONS=" -d -r --scan_groups --dw --check_n_old_contacts 4 "
+OPTIONS=" -d -r --scan_groups --dw --check_n_old_contacts 4 --group_from_cache "
 
 if [ "x$DISABLE" == "x" ] && [ -d "$FLICKRPHOTODIR" ]; then
     cd $FLICKRDIR

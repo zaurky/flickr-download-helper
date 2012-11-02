@@ -32,10 +32,6 @@ def file_dump(path, content):
     f.close()
 
 class FileWrite(Singleton):
-#    existing = None
-#    def init(self):
-#        self.existing = Existing()
-
     def write(self, filename, content, existing = None):
         try:
             dirname = os.path.dirname(filename)
@@ -184,5 +180,3 @@ class Existing():
         for photo in photos:
             if self.exists(photo['id']): ret.append(photo)
         return ret
-
-

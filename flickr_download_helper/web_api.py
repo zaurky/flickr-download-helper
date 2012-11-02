@@ -38,4 +38,3 @@ class PhotoManager(GenericBackup):
                 photo['state'] = self.internal[photo['id']]
             ret.append(photo)
         return ret
-

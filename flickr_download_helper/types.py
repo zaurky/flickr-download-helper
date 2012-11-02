@@ -1,4 +1,3 @@
-
 class FlickrDownloadHelperErrorTypes:
     DISPLAY_HELP = 1
 

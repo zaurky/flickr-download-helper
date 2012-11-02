@@ -96,4 +96,3 @@ class Logger(Singleton):
         if attr.startswith("__") and attr.endswith("__"):
             raise AttributeError, attr
         return getattr(self.internal, attr)
-
