@@ -77,14 +77,18 @@ def json_request2(api, token, method, **kargs):
         kargs['extras'] = 'media, url_sq, url_t, url_s, url_m, url_l, url_o, url_z, date_upload, owner_name, last_update'
 
     kargs.update({
-        'method': "flickr.%s" % method,
+        'method': 'flickr.%s' % method,
         'format': 'json',
         'nojsoncallback': 1,
         'per_page': kargs.get('per_page', DEFAULT_PERPAGE),
+        'timeout': 10,
     })
 
     msg = 'error while getting ' + kargs.pop('message', '%s')
     msg_params = kargs.pop('message_params', [])
+
+    # XXX this is debug
+    kargs = dict(filter(lambda (k,v): v is not None, kargs.items()))
 
     request = Flickr.API.Request(**kargs)
     request_args = str(filter(lambda arg:
@@ -116,68 +120,10 @@ def json_request2(api, token, method, **kargs):
 
     return parseResponse(resp, msg, msg_params)
 
-def json_requestnew(api, token, method, message, message_params, **kargs):
+def json_request(api, token, method, message, message_params, **kargs):
     kargs.update({'message': message, 'message_params': message_params})
     return json_request2(api, token, method, **kargs)
 
-def json_request(api, token, method, message, message_params, photo_id=None, page=None, per_page=None, user_id=None, photoset_id=None, username=None, collection_id=None, content_type=None, min_date=None, tags=None, count=None, min_upload_date=None, min_fave_date=None, group_id=None, url=None, method_name=None, invitation_only=None, sort=None):
-    if per_page is None:
-        per_page = DEFAULT_PERPAGE
-
-    method = "flickr.%s" % method
-    if not token:
-        request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=per_page, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only, sort=sort)
-    else:
-        request = Flickr.API.Request(method=method, auth_token=token, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=per_page, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only, sort=sort)
-    # that's kind of ugly....
-    if not photo_id: request.args.pop('photo_id')
-    if not page: request.args.pop('page')
-    if not per_page: request.args.pop('per_page')
-    if not user_id: request.args.pop('user_id')
-    if not username: request.args.pop('username')
-    if not photoset_id: request.args.pop('photoset_id')
-    if not collection_id:request.args.pop('collection_id')
-    if not min_date:request.args.pop('min_date')
-    if not min_upload_date:request.args.pop('min_upload_date')
-    if not tags:request.args.pop('tags')
-    if not count:request.args.pop('count')
-    if not min_fave_date:request.args.pop('min_fave_date')
-    if not group_id:request.args.pop('group_id')
-    if not url:request.args.pop('url')
-    if not method_name:request.args.pop('method_name')
-    if not invitation_only:request.args.pop('invitation_only')
-    if not sort: request.args.pop('sort')
-    if not content_type:
-        request.args.pop('content_type')
-    else:
-        request.args['extras'] = 'media, url_sq, url_t, url_s, url_m, url_l, url_o, url_z, date_upload, owner_name, last_update'
-    request_args = request.args.copy()
-    for i in ('auth_token', 'format', 'nojsoncallback', 'method'):
-        if i in request_args:
-            request_args.pop(i)
-    Logger().debug("calling flickr.%s %s"%(method, str(request_args)))
-    try:
-        response = api.execute_request(request, sign=True, timeout=6)
-    except urllib2.HTTPError, e:
-        if e.code == 500:
-            # try again
-            response = api.execute_request(request, sign=True, timeout=6)
-        else:
-            raise e
-    except urllib2.URLError, e:
-        if e.errno == 110: # Connection timed out
-            # try again
-            response = api.execute_request(request, sign=True, timeout=6)
-        else:
-            raise e
-    except httplib.BadStatusLine, e:
-        # try again, then fail
-        try:
-            response = api.execute_request(request, sign=True, timeout=6)
-        except:
-            return None
-
-    return parseResponse(response, "error while getting " + message, message_params)
 
 #################################
 
@@ -382,12 +328,23 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = No
 
     return content
 
-def getUserPhotos(api, token, user_id, min_upload_date = None, page = 1, limit=None):
+def getUserPhotos(api, token, user_id, min_upload_date=None, page=1, limit=None):
     per_page = DEFAULT_PERPAGE
     if limit is not None:
         per_page = limit
 
-    rsp_json = json_request(api, token, 'people.getPhotos', "%s's photos page %i (%s)", [user_id, page], page=page, per_page=per_page, user_id=user_id, content_type=7, min_upload_date=min_upload_date)
+    kargs = {
+        'page': page,
+        'per_page': per_page,
+        'user_id': user_id,
+        'content_type': 7,
+    }
+
+    if min_upload_date:
+        kargs['min_upload_date'] = min_upload_date
+
+    rsp_json = json_request(
+        api, token, 'people.getPhotos', "%s's photos page %i (%s)", [user_id, page], **kargs)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
