@@ -440,49 +440,66 @@ def searchGroup(api, token, group_name):
     return searchGroupByUrl(api, token, 'http://www.flickr.com/groups/%s' % group_name)
 
 def getPhotosByTag(api, token, user_id, tags, page=1):
-    rsp_json = json_request(api, token, 'photos.search', "error while searching photos", user_id=user_id, tags=tags, content_type=7, page=page)
+    rsp_json = json_request(api, token, 'photos.search',
+        "error while searching photos",
+        user_id=user_id, tags=tags, content_type=7, page=page)
     if not rsp_json: return None
 
     content = rsp_json['photos']['photo']
-    if int(len(content) + (page-1)*100) != int(rsp_json['photos']['total']):
-        next = getPhotosByTag(api, token, user_id, tags, page+1)
-        content.extend(next)
+    total = int(rsp_json['photos']['total'])
+
+    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
+        content.extend(getPhotosByTag(api, token, user_id, tags, page+1))
+
     return content
 
-def getContactList(api, token, page = 1):
-    rsp_json = json_request(api, token, 'contacts.getList', 'error while getting the contact list', page=page, sort='time')
+def getContactList(api, token, page=1):
+    rsp_json = json_request(api, token, 'contacts.getList',
+        'error while getting the contact list',
+        page=page, sort='time')
     if not rsp_json: return []
+    if not rsp_json.get('contacts'): return []
 
-    if 'contact' not in rsp_json['contacts']: return []
     content = rsp_json['contacts']['contact']
-    if int(len(content) + (page-1)*100) != int(rsp_json['contacts']['total']):
-        next = getContactList(api, token, page+1)
-        content.extend(next)
+    total = int(rsp_json['contacts']['total'])
+
+    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
+        content.extend(getContactList(api, token, page+1))
+
     return content
 
-def getUserFavorites(api, token, user_id, page = 1, one_shot = False, per_page=DEFAULT_PERPAGE, min_fave_date=None):
-    rsp_json = json_request(api, token, 'favorites.getList', 'error while getting %s favorites', [user_id], user_id=user_id, page=page, content_type=7, per_page=per_page, min_fave_date=min_fave_date)
+def getUserFavorites(api, token, user_id, page=1, one_shot=False, per_page=DEFAULT_PERPAGE, min_fave_date=None):
+    rsp_json = json_request(api, token, 'favorites.getList',
+        'error while getting %s favorites', [user_id],
+        user_id=user_id, page=page, content_type=7, per_page=per_page,
+        min_fave_date=min_fave_date)
     if not rsp_json: return []
+
     content = rsp_json['photos']['photo']
+    total = int(rsp_json['photos']['total'])
+
     if not one_shot:
-        while (len(content) < int(rsp_json['photos']['total'])):
-            if len(content) < int(rsp_json['photos']['total']) - per_page:
+        while len(content) < total:
+            if len(content) < total - per_page:
                 page += 1
-                next = getUserFavorites(api, token, user_id, page, min_fave_date=min_fave_date, one_shot=True)
-                content.extend(next)
+                content.extend(getUserFavorites(api, token,
+                    user_id, page, min_fave_date=min_fave_date, one_shot=True))
             else:
                 break
+
     return content
 
 def getUserFromUrl(api, url, from_nick = False):
     Logger().debug("calling %s" % ('urls.lookupUser'))
+
     request = Flickr.API.Request(method='flickr.urls.lookupUser', url=url, format='json', nojsoncallback=1)
     response = api.execute_request(request, sign=True)
+
     if response.code != 200:
         if from_nick:
             raise Exception('error: %s' % str(response.code))
         else:
-            Logger().error("while looking up for url %s (error: %s)"%(url, str(response.code)))
+            Logger().error("while looking up for url %s (error: %s)" % (url, str(response.code)))
             return None
 
     rsp_json = simplejson.load(response)
@@ -490,7 +507,7 @@ def getUserFromUrl(api, url, from_nick = False):
         if from_nick:
             raise Exception(rsp_json['message'])
         else:
-            Logger().error("while looking up for url %s (%s)"%(url, rsp_json['message']))
+            Logger().error("while looking up for url %s (%s)" % (url, rsp_json['message']))
             return None
 
     user = rsp_json['user']
@@ -505,27 +522,25 @@ def getUserFromNick(api, nick):
         return None
 
 def getUserFromAll(api, u_string):
-    user = getUserFromUrl(api, u_string)
-    if user: return user
-    user = getUserFromNick(api, u_string)
-    if user: return user
-    user = getUserFromUsername(api, u_string)
-    if user: return user
-    user = getUserFromID(api, u_string)
-    if user: return user
+    for func in (
+            getUserFromUrl, getUserFromNick, getUserFromUsername, getUserFromID):
+        user = func(api, u_string)
+        if user: return user
+
     return None
 
 def _downloadProtect(url, nb_tries=5):
-    if nb_tries <=0:
+    if nb_tries <= 0:
         return None
+
     try:
         return urllib2.urlopen(url).read()
     except urllib2.URLError, e:
         return _downloadProtect(url, nb_tries-1)
     except Exception, e:
-        Logger().error("while downloading the file from %s (e: %s)"%(url, str(e)))
+        Logger().error("while downloading the file from %s (e: %s)" % (url, str(e)))
 
-def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, info = None):
+def downloadPhotoFromURL(url, filename, existing=None, check_exists=False, info=None):
     if not check_exists and os.path.exists(filename):
         Logger().info("%s exists"%info['id'])
         return 0
@@ -549,11 +564,14 @@ def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, i
                 f.insert(len(f)-1, str(index))
             else:
                 f[len(f)-2] = str(index)
+
             filename = '.'.join(f)
             possible_files.append(filename)
+
         possible_files.pop()
 
     FileWrite().write(filename, content, existing)
+
     if info:
         try:
             exif.fillFile(None, None, filename, info = info)
@@ -592,15 +610,23 @@ def downloadPhotoFromURL(url, filename, existing = None, check_exists = False, i
                 Logger().debug("addFile %s (%s) != %s (%s) len" % \
                     (old_filename, len(old_content), filename, new_len))
 
-    if OPT.new_in_dir and type(OPT.new_in_dir) != bool:
+    if OPT.new_in_dir and not isinstance(OPT.new_in_dir, bool):
         link_dest = os.path.join(OPT.new_in_dir, os.path.basename(filename))
+
         if not os.path.exists(link_dest):
             try:
                 os.symlink(filename, link_dest)
             except Exception, e:
                 Logger().error(e)
-    if OPT.daily_in_dir and type(OPT.daily_in_dir) != bool:
-        link_dest = os.path.join(OPT.daily_in_dir, '_'.join([os.path.basename(os.path.dirname(filename)), os.path.basename(filename)]))
+
+    if OPT.daily_in_dir and not isinstance(OPT.daily_in_dir, bool):
+        link_dest = os.path.join(
+            OPT.daily_in_dir,
+            '_'.join([
+                os.path.basename(os.path.dirname(filename)),
+                os.path.basename(filename)
+            ]))
+
         if not os.path.exists(link_dest):
             try:
                 os.symlink(filename, link_dest)
@@ -625,83 +651,95 @@ def restoreUser(user_id, backup_dir):
         ret = None
     return ret
 
-def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id, existing = None):
+def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id, existing=None):
         photo_id2destination = {}
         if existing == None:
             existing = Existing(user_id, user_name)
+
         # prepare the photo directory
         Logger().info("\n== prepare the photo directory")
         try:
             destination = os.path.join(opt.photo_dir, user_name)
             try:
                 if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
-            except Exception, e:
+            except Exception:
                 Logger().warn(destination)
-                raise e
+                raise
+
             if "/" in photoset_name: photoset_name = photoset_name.replace('/', '')
+
             destination = os.path.join(destination, photoset_name)
+
             try:
                 if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
-            except Exception, e:
+            except Exception:
                 Logger().warn(destination)
-                raise e
+                raise
+
         except OSError, e:
             if e.errno == 28:
                 ret = waitFor("there is not enough space to continue, please delete some files and try again")
                 if ret:
                     destination = os.path.join(opt.photo_dir, user_name)
                     if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+
                     destination = os.path.join(destination, photoset_name)
                     if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+
                 else:
-                    raise e
+                    raise
             elif e.errno == 13:
                 ret = waitFor("you dont have the permissions to access %s", destination)
                 if ret:
                     destination = os.path.join(opt.photo_dir, user_name)
                     if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+
                     destination = os.path.join(destination, photoset_name)
                     if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+
                 else:
-                    raise e
+                    raise
             else:
                 Logger().error("while doing stuffs in %s"%destination)
                 info = sys.exc_info()
                 Logger().error(str(e))
                 Logger().print_tb(info[2])
-                raise e
+                raise
 
         photos = getPhotosetPhotos(api, token, photoset_id)
         for photo in photos:
             photo_id2destination[photo['id']] = destination
+
         total = len(photos)
+
         photos = existing.grepPhotosDontExists(photos)
+
         total_after_filter = len(photos)
+
         if total != total_after_filter:
             Logger().info("filter %d photos" % (total - total_after_filter))
 
         infos = {}
         for photo in photos: infos[photo['id']] = photo
+
         urls = getPhotoURLFlickr(api, token, photos, opt.fast_photo_url)
+
         return (urls, photo_id2destination, destination, infos)
 
 
 def getStaticContactList():
     contacts_to_get_too = os.path.join(OPT.files_dir, 'contacts_to_get_too')
+
     if os.path.exists(contacts_to_get_too):
         content = readFile(contacts_to_get_too)
-        ret = []
-        for line in content.split("\n"):
-            if "@" in line:
-                ret.append(line)
-        return ret
+        return filter(lambda line: '@' in line, content.split('\n'))
+
     return []
 
 def getUser(api, token):
     Logger().info("\n== get user_id")
-    if OPT.user_id and OPT.user_id in OPT.user_hash:
-        user = OPT.user_hash[OPT.user_id]
-    elif OPT.user_id == None:
+
+    if not OPT.user_id:
         if OPT.url:
             user = getUserFromUrl(api, OPT.url)
         elif OPT.nick:
@@ -711,6 +749,10 @@ def getUser(api, token):
         else:
             Logger().error("can't get any user_id")
             return None
+
+    elif OPT.user_hash.get(OPT.user_id):
+        user = OPT.user_hash[OPT.user_id]
+
     else:
         user = getUserFromID(api, OPT.user_id)
 
