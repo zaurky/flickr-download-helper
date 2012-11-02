@@ -212,44 +212,60 @@ def getCollectionPhotosets(api, token, collection_id, user_id):
     return rsp_json['collections']['collection'][0]['set'] if rsp_json else None
 
 
-def getPhotosetPhotos(api, token, photoset_id, page = 1):
-    rsp_json = json_request(api, token, 'photosets.getPhotos', "photos from %s photoset, page %i", [photoset_id, page], page=page, per_page=DEFAULT_PERPAGE, photoset_id=photoset_id, content_type=7)
+def getPhotosetPhotos(api, token, photoset_id, page=1):
+    rsp_json = json_request(api, token, 'photosets.getPhotos',
+        "photos from %s photoset, page %i", [photoset_id, page],
+        page=page, per_page=DEFAULT_PERPAGE, photoset_id=photoset_id, content_type=7)
     if not rsp_json: return []
 
     content = rsp_json['photoset']['photo']
+    total = int(rsp_json['photoset']['total'])
 
-    if int(len(content) + (page-1)*DEFAULT_PERPAGE) != int(rsp_json['photoset']['total']):
-        next = getPhotosetPhotos(api, token, photoset_id, page+1)
-        content.extend(next)
+    if int(len(content) + (page - 1) * DEFAULT_PERPAGE) != total:
+        content.extend(getPhotosetPhotos(api, token, photoset_id, page + 1))
+
     return content
 
-def getGroupPhotosFromScratch(api, token, group_id, batch=0):
-    print "getGroupPhotosFromScratch %s %s" % (group_id, batch)
+def getGroupPhotosFromScratch(api, token, group_id, batch=0, page_in_batch=100, per_page=500):
+    Logger().info("getGroupPhotosFromScratch %s %s" % (group_id, batch))
+
     content = []
-    for spage in range(1, 101):
-        page = spage + batch * 100
-        rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s, page %i", [group_id, page], page=page, per_page=500, group_id = group_id, content_type=7)
+    for spage in range(1, page_in_batch + 1):
+        page = spage + batch * page_in_batch
+        rsp_json = json_request(api, token, 'groups.pools.getPhotos',
+            "photos from group %s, page %i", [group_id, page],
+            page=page, per_page=per_page, group_id=group_id, content_type=7)
+
+        if not rsp_json: break
+
         content.extend(rsp_json['photos']['photo'])
-        if page * 500 > int(rsp_json['photos']['total']):
-            break
+
+        if page * per_page > int(rsp_json['photos']['total']): break
 
     return content
 
 def groupFromScratch(api, token, group_id):
-    rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s", [group_id], page=1, per_page=1, group_id=group_id)
+    rsp_json = json_request(api, token, 'groups.pools.getPhotos',
+        "photos from group %s", [group_id], per_page=1, group_id=group_id)
     total = int(rsp_json['photos']['total'])
-    print "groupFromScratch %s %s"%(group_id, total)
+
+    Logger().info("groupFromScratch %s %s" % (group_id, total))
 
     def _get_path(batch):
         return os.path.join(
             OPT.groups_full_content_dir,
             "%s_%s" % (group_id, batch))
 
-    maxbatch = 1 + total/(500*100)
+    page_in_batch = 100
+    per_page = 500
+    maxbatch = 1 + total / (page_in_batch * per_page)
+
     for batch in range(0, maxbatch):
-        content = getGroupPhotosFromScratch(api, token, group_id, batch)
-        gpath = _get_path(batch)
-        file_dump(gpath, content)
+        content = getGroupPhotosFromScratch(api, token, group_id,
+            batch, page_in_batch, per_page)
+
+        file_dump(_get_path(batch), content)
+
 
 def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = None):
     if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session']:
