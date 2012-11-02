@@ -267,57 +267,63 @@ def groupFromScratch(api, token, group_id):
         file_dump(_get_path(batch), content)
 
 
-def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = None):
-    if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session']:
-        if INS['groups'].has_key(group_id):
-            return INS['groups'][group_id]
-    print "getGroupPhotos %s %s %s"%(group_id, page, user_id)
+def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
+    if not user_id and INS.get('put_group_in_session'):
+        group_data = INS['groups'].get(group_id)
+        if group_data:
+            return group_data
+
+    Logger().info("getGroupPhotos %s %s %s" % (group_id, page, user_id))
 
     gpath = os.path.join(OPT.groups_full_content_dir, group_id)
-    if user_id is None and OPT.group_from_cache:
+    if not user_id and OPT.group_from_cache:
         if os.path.exists(gpath):
             l_photos = file_load(gpath)
-            if l_photos is not None:
-                print "load from cache"
-                if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+            if l_photos:
+                Logger().debug("%s loaded from cache" % group_id)
+
+                if INS.get('put_group_in_session'):
                     INS['groups'][group_id] = l_photos
+
                 return l_photos
 
-    if per_page is None:
-        if user_id is None and INS.has_key('put_group_in_session') and INS['put_group_in_session'] and not OPT.group_from_cache:
+    if not per_page:
+        if not user_id and INS.get('put_group_in_session') and not OPT.group_from_cache:
             per_page = DEFAULT_PERPAGE
         else:
             per_page = 500
 
-    rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s for user %s, page %i", [group_id, user_id, page], page=page, per_page=per_page, group_id = group_id, user_id = user_id, content_type=7)
+    rsp_json = json_request(api, token, 'groups.pools.getPhotos',
+        "photos from group %s for user %s, page %i", [group_id, user_id, page],
+        page=page, per_page=per_page, group_id=group_id, user_id=user_id, content_type=7)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
-    total = int(len(content) + (page-1)*per_page)
     g_size = int(rsp_json['photos']['total'])
-    print "%s has %d results"%(group_id, g_size)
+    total = len(content) + (page - 1) * per_page
+
+    Logger().debug("%s has %d results" % (group_id, g_size))
 
     def _cache_group(group_id, content, gpath=gpath):
-        if user_id is None:
-            if INS.has_key('put_group_in_session') and INS['put_group_in_session']:
+        if not user_id:
+            if INS.get('put_group_in_session'):
                 INS['groups'][group_id] = content
-            if INS.has_key('temp_groups') and INS['temp_groups'].has_key(group_id):
+
+            if INS.get('temp_groups', {}).get(group_id):
                 del INS['temp_groups'][group_id]
+
             file_dump(gpath, content)
         return content
 
     l_photos = []
-    if user_id is None:
-        if INS.has_key('temp_groups') and INS['temp_groups'].has_key(group_id):
+    if not user_id:
+        if INS.get('temp_groups', {}).get(group_id):
             l_photos = INS['temp_groups'][group_id]
         elif os.path.exists(gpath):
-            print "load %s" % gpath
-            l_photos = file_load(gpath)
-            if l_photos is None:
-                l_photos = []
+            Logger().debug("load file %s" % gpath)
+            l_photos = file_load(gpath) or []
     else:
-        if INS.has_key('temp_groups') and INS['temp_groups'].has_key("%s%s" % (group_id, user_id)):
-            l_photos = INS['temp_groups']["%s%s" % (group_id, user_id)]
+        l_photos = INS.get('temp_groups', {}).get("%s%s" % (group_id, user_id), [])
 
     if len(l_photos) >= g_size:
         return _cache_group(group_id, l_photos)
@@ -337,9 +343,10 @@ def getGroupPhotos(api, token, group_id, page = 1, user_id = None, per_page = No
     content = l_photos
     total = len(l_photos)
 
-    if len(l_photos) < g_size:
-        if g_size - len(l_photos) < 500:
+    if total < g_size:
+        if g_size - total < 500:
             per_page = DEFAULT_PERPAGE
+
         INS['temp_groups']["%s%s" % (group_id, user_id or '')] = content
         content = getGroupPhotos(api, token, group_id, page+1, user_id, per_page=per_page)
 
