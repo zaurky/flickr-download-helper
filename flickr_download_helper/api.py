@@ -192,7 +192,7 @@ def getUserGroups(api, token, user_id, page = 1):
     return rsp_json['groups']['group'] if rsp_json else []
 
 def countGroupPhotos(api, token, group_id):
-    rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s", [group_id], page=1, per_page=1, group_id=group_id)
+    rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s", [group_id], per_page=1, group_id=group_id)
     return rsp_json['photos']['total'] if rsp_json else 0
 
 def getContactPhotos(api, token, page = 1):
