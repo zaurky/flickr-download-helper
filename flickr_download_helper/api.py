@@ -24,17 +24,21 @@ from datetime import datetime
 
 DEFAULT_PERPAGE = 100
 
+SIZES = ['Thumbnail', 'Square', 'Medium', 'Large', 'Original']
+INV_SIZES = list(SIZES)
+INV_SIZES.reverse()
+
 
 #################################
-def getPicUrl(photo, format):
+def _getPicUrl(photo, format):
     return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg" % (
         photo['farm'], photo['server'], photo['id'], photo['secret'], format)
 
 def getThumbURL(photo):
-    return getPicUrl(photo, 's')
+    return _getPicUrl(photo, 's')
 
 def getPhotoURL(photo):
-    return getPicUrl(photo, 'b')
+    return _getPicUrl(photo, 'b')
 
 def getUserURL(nick):
     return "http://www.flickr.com/photos/%s" % (nick)
@@ -43,24 +47,17 @@ def getVideoURL(photo):
     return "http://www.flickr.com/photos/%s/%s/play/orig/%s/" % (
         photo['owner'], photo['id'], photo['secret'])
 
-
-SIZES = ['Thumbnail', 'Square', 'Medium', 'Large', 'Original']
-INV_SIZES = list(SIZES)
-INV_SIZES.reverse()
+def _selectPhotoSizeURL(sizes, order):
+    for s in order:
+        for size in sizes:
+            if size['label'] == s:
+                return size['source']
 
 def selectSmallerPhotoSizeURL(sizes):
-    for s in SIZES:
-        for size in sizes:
-            if size['label'] == s:
-                return size['source']
-    return None
+    return _selectPhotoSizeURL(sizes, SIZES)
 
 def selectBiggerPhotoSizeURL(sizes):
-    for s in INV_SIZES:
-        for size in sizes:
-            if size['label'] == s:
-                return size['source']
-    return None
+    return _selectPhotoSizeURL(sizes, INV_SIZES)
 
 def selectMediaURL(sizes, media_type):
     for size in sizes:
@@ -139,14 +136,13 @@ def checkResponse(response, message, params):
     if response.code != 200:
         params.append("error: %i" % response.code)
         Logger().warn(message % tuple(params))
-        return None
+        return
 
     rsp_json = simplejson.load(response)
     if rsp_json['stat'] != 'ok':
         params.append(rsp_json['message'])
-        Logger().warn(params)
         Logger().warn(message % tuple(params))
-        return None
+        return
 
     return rsp_json
 
@@ -225,6 +221,71 @@ def getPhotosetPhotos(api, token, photoset_id, page=1):
         content.extend(getPhotosetPhotos(api, token, photoset_id, page + 1))
 
     return content
+
+def getUserLastPhotos(api, token, user_id, since, page=1):
+    rsp_json = json_request(api, token, 'photos.recentlyUpdated',
+        "last %s's photos page %i", [user_id, page],
+        page=page, per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7, min_date=since)
+    if not rsp_json: return []
+
+    content = rsp_json['photos']['photo']
+    total = int(rsp_json['photos']['total'])
+
+    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
+        content.extend(getUserPhotos(api, token, user_id, page+1))
+
+    return content
+
+def getPhotosByTag(api, token, user_id, tags, page=1):
+    rsp_json = json_request(api, token, 'photos.search',
+        "error while searching photos",
+        user_id=user_id, tags=tags, content_type=7, page=page)
+    if not rsp_json: return None
+
+    content = rsp_json['photos']['photo']
+    total = int(rsp_json['photos']['total'])
+
+    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
+        content.extend(getPhotosByTag(api, token, user_id, tags, page+1))
+
+    return content
+
+def getContactList(api, token, page=1):
+    rsp_json = json_request(api, token, 'contacts.getList',
+        'error while getting the contact list',
+        page=page, sort='time')
+    if not rsp_json: return []
+    if not rsp_json.get('contacts'): return []
+
+    content = rsp_json['contacts']['contact']
+    total = int(rsp_json['contacts']['total'])
+
+    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
+        content.extend(getContactList(api, token, page+1))
+
+    return content
+
+def getUserFavorites(api, token, user_id, page=1, one_shot=False, per_page=DEFAULT_PERPAGE, min_fave_date=None):
+    rsp_json = json_request(api, token, 'favorites.getList',
+        'error while getting %s favorites', [user_id],
+        user_id=user_id, page=page, content_type=7, per_page=per_page,
+        min_fave_date=min_fave_date)
+    if not rsp_json: return []
+
+    content = rsp_json['photos']['photo']
+    total = int(rsp_json['photos']['total'])
+
+    if not one_shot:
+        while len(content) < total:
+            if len(content) < total - per_page:
+                page += 1
+                content.extend(getUserFavorites(api, token,
+                    user_id, page, min_fave_date=min_fave_date, one_shot=True))
+            else:
+                break
+
+    return content
+
 
 def getGroupPhotosFromScratch(api, token, group_id, batch=0, page_in_batch=100, per_page=500):
     Logger().info("getGroupPhotosFromScratch %s %s" % (group_id, batch))
@@ -380,20 +441,6 @@ def getUserPhotos(api, token, user_id, min_upload_date=None, page=1, limit=None)
 
     return content
 
-def getUserLastPhotos(api, token, user_id, since, page=1):
-    rsp_json = json_request(api, token, 'photos.recentlyUpdated',
-        "last %s's photos page %i", [user_id, page],
-        page=page, per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7, min_date=since)
-    if not rsp_json: return []
-
-    content = rsp_json['photos']['photo']
-    total = int(rsp_json['photos']['total'])
-
-    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-        content.extend(getUserPhotos(api, token, user_id, page+1))
-
-    return content
-
 def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
     urls = {}
 
@@ -438,56 +485,6 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
 
 def searchGroup(api, token, group_name):
     return searchGroupByUrl(api, token, 'http://www.flickr.com/groups/%s' % group_name)
-
-def getPhotosByTag(api, token, user_id, tags, page=1):
-    rsp_json = json_request(api, token, 'photos.search',
-        "error while searching photos",
-        user_id=user_id, tags=tags, content_type=7, page=page)
-    if not rsp_json: return None
-
-    content = rsp_json['photos']['photo']
-    total = int(rsp_json['photos']['total'])
-
-    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-        content.extend(getPhotosByTag(api, token, user_id, tags, page+1))
-
-    return content
-
-def getContactList(api, token, page=1):
-    rsp_json = json_request(api, token, 'contacts.getList',
-        'error while getting the contact list',
-        page=page, sort='time')
-    if not rsp_json: return []
-    if not rsp_json.get('contacts'): return []
-
-    content = rsp_json['contacts']['contact']
-    total = int(rsp_json['contacts']['total'])
-
-    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-        content.extend(getContactList(api, token, page+1))
-
-    return content
-
-def getUserFavorites(api, token, user_id, page=1, one_shot=False, per_page=DEFAULT_PERPAGE, min_fave_date=None):
-    rsp_json = json_request(api, token, 'favorites.getList',
-        'error while getting %s favorites', [user_id],
-        user_id=user_id, page=page, content_type=7, per_page=per_page,
-        min_fave_date=min_fave_date)
-    if not rsp_json: return []
-
-    content = rsp_json['photos']['photo']
-    total = int(rsp_json['photos']['total'])
-
-    if not one_shot:
-        while len(content) < total:
-            if len(content) < total - per_page:
-                page += 1
-                content.extend(getUserFavorites(api, token,
-                    user_id, page, min_fave_date=min_fave_date, one_shot=True))
-            else:
-                break
-
-    return content
 
 def getUserFromUrl(api, url, from_nick = False):
     Logger().debug("calling %s" % ('urls.lookupUser'))
