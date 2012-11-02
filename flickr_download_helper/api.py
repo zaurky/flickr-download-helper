@@ -176,7 +176,7 @@ def getUserFromUsername(api, user_name):
     return rsp_json['user'] if rsp_json else None
 
 def searchGroupByUrl(api, token, group_url):
-    rsp_json =  json_request(api, token, 'urls.lookupGroup', "error while searching for group %s", [group_name], url = group_url, content_type=7)
+    rsp_json = json_request(api, token, 'urls.lookupGroup', "error while searching for group %s", [group_name], url=group_url, content_type=7)
     return rsp_json['group'] if rsp_json else []
 
 def getPhotoExif(api, token, photo_id):
