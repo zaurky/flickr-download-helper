@@ -116,15 +116,15 @@ def json_request2(api, token, method, **kargs):
 
     return parseResponse(resp, msg, msg_params)
 
-#def json_request(api, token, method, **kargs):
-#    return json_request2(api, token, method, **kargs)
+def json_requestnew(api, token, method, message, message_params, **kargs):
+    kargs.update({'message': message, 'message_params': message_params})
+    return json_request2(api, token, method, **kargs)
 
 def json_request(api, token, method, message, message_params, photo_id=None, page=None, per_page=None, user_id=None, photoset_id=None, username=None, collection_id=None, content_type=None, min_date=None, tags=None, count=None, min_upload_date=None, min_fave_date=None, group_id=None, url=None, method_name=None, invitation_only=None, sort=None):
     if per_page is None:
         per_page = DEFAULT_PERPAGE
 
     method = "flickr.%s" % method
-    print method
     if not token:
         request = Flickr.API.Request(method=method, format='json', nojsoncallback=1, photo_id=photo_id, page=page, per_page=per_page, user_id=user_id, photoset_id=photoset_id, username=username, collection_id=collection_id, content_type=content_type, min_date=min_date, tags=tags, count=count, min_upload_date=min_upload_date, min_fave_date=min_fave_date, group_id=group_id, url=url, method_name=method_name, invitation_only=invitation_only, sort=sort)
     else:
@@ -210,22 +210,28 @@ def parseResponse(response, message, params):
 #################################
 
 def getPhotoInfo(api, token, photo_id):
-    return json_request(api, token, 'photos.getInfo', "photo info for %s (%s)", [photo_id], photo_id=photo_id).get('photo')
+    rsp_json = json_request(api, token, 'photos.getInfo', "photo info for %s (%s)", [photo_id], photo_id=photo_id)
+    return rsp_json['photo'] if rsp_json else None
 
 def getPhotosetInfos(api, token, photoset_id):
-    return json_request(api, token, 'photosets.getInfo', "photoset %s informations (%s)", [photoset_id], photoset_id=photoset_id).get('photoset')
+    rsp_json = json_request(api, token, 'photosets.getInfo', "photoset %s informations (%s)", [photoset_id], photoset_id=photoset_id)
+    return rsp_json['photoset'] if rsp_json else None
 
 def getCollectionInfo(api, token, collection_id):
-    return json_request(api, token, 'collections.getInfo', "informations for collection %s (%s)", [collection_id], collection_id=collection_id).get('collection')
+    rsp_json = json_request(api, token, 'collections.getInfo', "informations for collection %s (%s)", [collection_id], collection_id=collection_id)
+    return rsp_json['collection'] if rsp_json else None
 
 def getUserFromID(api, user_id, token = None):
-    return json_request(api, token, 'people.getInfo', "user informations for %s (%s)", [user_id], user_id=user_id).get('person')
+    rsp_json = json_request(api, token, 'people.getInfo', "user informations for %s (%s)", [user_id], user_id=user_id)
+    return rsp_json['person'] if rsp_json else None
 
 def getUserFromUsername(api, user_name):
-    return json_request(api, None, 'people.findByUsername', "erro while getting user %s from username (%s)", [user_name], username=user_name).get('user')
+    rsp_json = json_request(api, None, 'people.findByUsername', "erro while getting user %s from username (%s)", [user_name], username=user_name)
+    return rsp_json['user'] if rsp_json else None
 
 def searchGroupByUrl(api, token, group_url):
-    return json_request(api, token, 'urls.lookupGroup', "error while searching for group %s (%s)", [group_name], url = group_url, content_type=7).get('group', [])
+    rsp_json =  json_request(api, token, 'urls.lookupGroup', "error while searching for group %s (%s)", [group_name], url = group_url, content_type=7)
+    return rsp_json['group'] if rsp_json else []
 
 def getPhotoExif(api, token, photo_id):
     rsp_json = json_request(api, token, 'photos.getExif', "photo EXIF for  %s (%s)", [photo_id], photo_id=photo_id)
