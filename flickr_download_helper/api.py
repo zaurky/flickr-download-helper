@@ -66,7 +66,7 @@ def selectMediaURL(sizes, media_type):
 
 #################################
 
-def json_request(api, token, method, message, msg_params, **kargs):
+def json_request(api, token, method, message, msg_params=[], **kargs):
     if token:
         kargs['auth_token'] = token
 
@@ -267,8 +267,10 @@ def getContactList(api, token, page=1):
         page=page, sort='time')
     if not (rsp_json and rsp_json.get('contacts')): return []
 
-    content = rsp_json['contacts']['contact']
+    content = rsp_json['contacts'].get('contact')
     total = int(rsp_json['contacts']['total'])
+
+    if not content: return []
 
     if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
         content.extend(getContactList(api, token, page+1))
