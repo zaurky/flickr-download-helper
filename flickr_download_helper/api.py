@@ -147,59 +147,75 @@ def parseResponse(response, message, params):
 #################################
 
 def getPhotoInfo(api, token, photo_id):
-    rsp_json = json_request(api, token, 'photos.getInfo', "photo info for %s", [photo_id], photo_id=photo_id)
+    rsp_json = json_request(api, token, 'photos.getInfo',
+        "photo info for %s", [photo_id], photo_id=photo_id)
     return rsp_json['photo'] if rsp_json else None
 
 def getPhotosetInfos(api, token, photoset_id):
-    rsp_json = json_request(api, token, 'photosets.getInfo', "photoset %s informations", [photoset_id], photoset_id=photoset_id)
+    rsp_json = json_request(api, token, 'photosets.getInfo',
+        "photoset %s informations", [photoset_id], photoset_id=photoset_id)
     return rsp_json['photoset'] if rsp_json else None
 
 def getCollectionInfo(api, token, collection_id):
-    rsp_json = json_request(api, token, 'collections.getInfo', "informations for collection %s", [collection_id], collection_id=collection_id)
+    rsp_json = json_request(api, token, 'collections.getInfo',
+        "informations for collection %s", [collection_id], collection_id=collection_id)
     return rsp_json['collection'] if rsp_json else None
 
 def getUserFromID(api, user_id, token = None):
-    rsp_json = json_request(api, token, 'people.getInfo', "user informations for %s", [user_id], user_id=user_id)
+    rsp_json = json_request(api, token, 'people.getInfo',
+        "user informations for %s", [user_id], user_id=user_id)
     return rsp_json['person'] if rsp_json else None
 
 def getUserFromUsername(api, user_name):
-    rsp_json = json_request(api, None, 'people.findByUsername', "erro while getting user %s from username", [user_name], username=user_name)
+    rsp_json = json_request(api, None, 'people.findByUsername',
+        "erro while getting user %s from username", [user_name], username=user_name)
     return rsp_json['user'] if rsp_json else None
 
 def searchGroupByUrl(api, token, group_url):
-    rsp_json = json_request(api, token, 'urls.lookupGroup', "error while searching for group %s", [group_name], url=group_url, content_type=7)
+    rsp_json = json_request(api, token, 'urls.lookupGroup',
+        "error while searching for group %s", [group_name], url=group_url, content_type=7)
     return rsp_json['group'] if rsp_json else []
 
 def getPhotoExif(api, token, photo_id):
-    rsp_json = json_request(api, token, 'photos.getExif', "photo EXIF for %s", [photo_id], photo_id=photo_id)
+    rsp_json = json_request(api, token, 'photos.getExif',
+        "photo EXIF for %s", [photo_id], photo_id=photo_id)
     return rsp_json['photo']['exif'] if rsp_json else None
 
 def getPhotoSize(api, token, photo_id):
-    rsp_json = json_request(api, token, 'photos.getSizes', "photo size for %s", [photo_id], photo_id=photo_id)
+    rsp_json = json_request(api, token, 'photos.getSizes',
+        "photo size for %s", [photo_id], photo_id=photo_id)
     return rsp_json['sizes']['size'] if rsp_json else None
 
 def getUserGroups(api, token, user_id, page = 1):
-    rsp_json = json_request(api, token, 'people.getPublicGroups', "user %s groups, page %i", [user_id, page], page=page, user_id=user_id, content_type=7, invitation_only=1)
+    rsp_json = json_request(api, token, 'people.getPublicGroups',
+        "user %s groups, page %i", [user_id, page],
+        page=page, user_id=user_id, content_type=7, invitation_only=1)
     return rsp_json['groups']['group'] if rsp_json else []
 
 def countGroupPhotos(api, token, group_id):
-    rsp_json = json_request(api, token, 'groups.pools.getPhotos', "photos from group %s", [group_id], per_page=1, group_id=group_id)
+    rsp_json = json_request(api, token, 'groups.pools.getPhotos',
+        "photos from group %s", [group_id], per_page=1, group_id=group_id)
     return rsp_json['photos']['total'] if rsp_json else 0
 
 def getContactPhotos(api, token, page = 1):
-    rsp_json = json_request(api, token, 'photos.getContactsPhotos', "contact photos", page=page, count=50)
+    rsp_json = json_request(api, token, 'photos.getContactsPhotos',
+        "contact photos", page=page, count=50)
     return rsp_json['photos']['photo'] if rsp_json else None
 
 def getUserPhotosets(api, token, user_id):
-    rsp_json = json_request(api, token, 'photosets.getList', "photosets for user %s", [user_id], user_id=user_id)
+    rsp_json = json_request(api, token, 'photosets.getList',
+        "photosets for user %s", [user_id], user_id=user_id)
     return rsp_json['photosets']['photoset'] if rsp_json else None
 
 def getContactsPhotos(api, token):
-    rsp_json = json_request(api, token, 'photos.getContactsPhotos', 'error while getting the contacts photos')
+    rsp_json = json_request(api, token, 'photos.getContactsPhotos',
+        'error while getting the contacts photos')
     return rsp_json['photos']['photo'] if rsp_json else []
 
 def getCollectionPhotosets(api, token, collection_id, user_id):
-    rsp_json = json_request(api, token, 'collections.getTree', "photosets for user (%s) collection %s", [user_id, collection_id], collection_id=collection_id, user_id=user_id, content_type=7)
+    rsp_json = json_request(api, token, 'collections.getTree',
+        "photosets for user (%s) collection %s", [user_id, collection_id],
+        collection_id=collection_id, user_id=user_id, content_type=7)
     return rsp_json['collections']['collection'][0]['set'] if rsp_json else None
 
 
@@ -457,7 +473,8 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
             else:
                 sizes = getPhotoSize(api, token, photo['id'])
                 if sizes == None:
-                    Logger().error("can't get photo size for %s (the photo is not going to be retrieve)" % photo['id'])
+                    Logger().error("can't get photo size for %s " \
+                        "(the photo is not going to be retrieve)" % photo['id'])
                     continue
 
                 if thumb:
@@ -669,25 +686,33 @@ def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id,
                 raise
 
         except OSError, e:
+            def _mkdir(destination):
+                if opt.retrieve and not os.path.exists(destination):
+                    os.mkdir(destination)
+
             if e.errno == 28:
-                ret = waitFor("there is not enough space to continue, please delete some files and try again")
+                ret = waitFor("there is not enough space to continue, " \
+                    "please delete some files and try again")
+
                 if ret:
                     destination = os.path.join(opt.photo_dir, user_name)
-                    if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+                    _mkdir(destination)
 
                     destination = os.path.join(destination, photoset_name)
-                    if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+                    _mkdir(destination)
 
                 else:
                     raise
             elif e.errno == 13:
-                ret = waitFor("you dont have the permissions to access %s", destination)
+                ret = waitFor("you dont have the permissions to access %s",
+                    destination)
+
                 if ret:
                     destination = os.path.join(opt.photo_dir, user_name)
-                    if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+                    _mkdir(destination)
 
                     destination = os.path.join(destination, photoset_name)
-                    if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
+                    _mkdir(destination)
 
                 else:
                     raise
