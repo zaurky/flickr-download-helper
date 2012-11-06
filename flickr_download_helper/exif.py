@@ -110,7 +110,7 @@ def putGeneralInfo(api, token, photo_id, metadata, info = None):
     if info.get('description'):
         a_userComment.append('<description>%s</description>' % (encode(info['description'])))
 
-    if len(info.get('tags', {}).get('tag', []):
+    if len(info.get('tags', {}).get('tag', [])):
         a_userComment.append('<tags>%s</tags>' % (', '.join(map(encode, info['tags']['tag']))))
 
     if len(a_userComment) and comment:
