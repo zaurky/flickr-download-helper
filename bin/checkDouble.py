@@ -11,30 +11,20 @@ import sys
 config = OptConfigReader()
 config.setup()
 
-file = os.path.join(OPT.files_dir, "doubles")
+filename = os.path.join(OPT.files_dir, "doubles")
 
 content = {}
-h_filesmd5 = {}
-h_md5files = {}
-h_double = {}
 
-if os.path.exists(file):
-    shutil.move(file, "%s.bkp"%(file))
-    f = open(file, 'rb')
+if os.path.exists(filename):
+    shutil.move(filename, "%s.bkp" % (filename))
+    f = open(filename, 'rb')
     content = pickle.load(f)
     f.close()
 
-if 'h_filesmd5' in content:
-    h_filesmd5 = content['h_filesmd5']
-
-if 'h_md5files' in content:
-    h_md5files = content['h_md5files']
-    r_content = h_md5files.keys()
-else:
-    r_content = []
-
-if 'h_double' in content:
-    h_double = content['h_double']
+h_filesmd5 = content.get('h_filesmd5', {})
+h_md5files = content.get('h_md5files', {})
+h_double = content.get('h_double', {})
+r_content = h_md5files.keys()
 
 #####################
 # DO THE STUFF
@@ -61,11 +51,10 @@ def get_files(directory):
         elif os.path.isdir(path): # dir
             get_files(path)
 
-import Set
+
 def uniq(seq):
-    # Not order preserving    
-    s = set(seq)
-    return list(s)
+    # Not order preserving
+    return list(set(seq))
 
 get_files(OPT.photo_dir)
 
@@ -75,8 +64,6 @@ content['h_filesmd5'] = h_filesmd5
 content['h_double'] = h_double
 content['h_md5files'] = h_md5files
 
-f = open(file, 'wb')
+f = open(filename, 'wb')
 pickle.dump(content, f)
 f.close()
-
-
