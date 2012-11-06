@@ -278,18 +278,18 @@ def main(api, token):
                 group_id = group['nsid']
 
                 Logger().info("\n== getting group %s (%s) [%s/%s]" % (
-                    group['name'], group_id, index, len(group_id)))
+                    group['name'], group_id, index, len(groups)))
 
                 count = 0
 
                 kargs = {'user_id': user_id, 'per_page': 500}
 
-                if OPT.scan_group_id:
+                if OPT.scan_groups:
                     kargs.pop('user_id')
 
                 l_photos = getGroupPhotos(api, token, group_id, **kargs)
 
-                if OPT.scan_group_id or OPT.force_group_verbose:
+                if OPT.scan_groups or OPT.force_group_verbose:
                     for l_photo in l_photos:
                         if l_photo['owner'] == user_id:
                             count += 1
