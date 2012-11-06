@@ -112,7 +112,7 @@ def json_request(api, token, method, message, msg_params, **kargs):
         try:
             resp = api.execute_request(request, sign=True)
         except:
-            return None
+            raise
 
     return parseResponse(resp, msg, msg_params)
 
