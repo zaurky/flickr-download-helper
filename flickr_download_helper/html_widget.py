@@ -1,5 +1,6 @@
 import markup
 
+
 class FDH_page(markup.page):
     def __str__(self, *attr):
         self.br()
@@ -17,6 +18,7 @@ class FDH_page(markup.page):
                 header=header,
                 footer='(c) 2010 - flickr download helper',
                 css=css)
+
 
 class Redirect_Page:
     def __str__(self, *attr):
