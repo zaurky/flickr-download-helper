@@ -3,6 +3,7 @@ import os
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.api import downloadPhotoFromURL
 
+
 class LocalProxy():
     home_path = '/var/www/html/proxy/'
     web_path = 'http://%s/' % '192.168.100.176/proxy'
