@@ -4,9 +4,12 @@ import logging.config
 import traceback
 import random
 
+
 class ConsoleLogger(Singleton):
+
     def debug(self, label):
-        if OPT.debug: print "debug: %s"%label
+        if OPT.debug:
+            print "debug: %s"%label
 
     def info(self, label):
         print label
@@ -24,6 +27,7 @@ class ConsoleLogger(Singleton):
         if hasattr(traceback, print_tb):
             traceback.print_tb(label)
 
+
 class NoneLogger(Singleton):
     def debug(self, label): pass
     def info(self, label): pass
@@ -32,21 +36,25 @@ class NoneLogger(Singleton):
     def prompt(self, label): pass
     def print_tb(self, label): pass
 
+
 def convertType(obj):
-    if type(obj) == int:
-        return str(obj)
-    return obj
+    return str(obj) if isinstance(obj, int) else obj
+
 
 class FileLogger(Singleton):
+
     def treatLabel(self, label):
-        if type(label) == list:
-            return map(lambda l:" %s: \t%s"%(self.session_id, convertType(l).replace('\n', '')), label)
-        return " %s: \t%s"%(self.session_id, label.replace('\n', ''))
+        if isinstance(label, (list, tuple)):
+            return map(lambda l:
+                " %s: \t%s" % (self.session_id, convertType(l).replace('\n', '')),
+                label)
+
+        return " %s: \t%s" % (self.session_id, label.replace('\n', ''))
 
     def setup(self):
         self.internal = logging.getLogger()
-        self.session_id = "%06d"%(random.randint(0, 10000))
-        print "logging as %s"%self.session_id
+        self.session_id = "%06d" % (random.randint(0, 10000))
+        print "logging as %s" % self.session_id
 
     def debug(self, label):
         self.internal.debug(self.treatLabel(label))
@@ -58,7 +66,7 @@ class FileLogger(Singleton):
         self.internal.warn(self.treatLabel(label))
 
     def error(self, label):
-        if type(label) == str:
+        if isinstance(label, basestring):
             self.internal.error(self.treatLabel(label))
         elif hasattr(label, 'message'):
             self.internal.error(self.treatLabel(label.message))
@@ -78,6 +86,7 @@ class FileLogger(Singleton):
 
 ########################################################
 class Logger(Singleton):
+
     def setup(self):
         if OPT.logger == 'console':
             self.internal = ConsoleLogger()
@@ -85,14 +94,16 @@ class Logger(Singleton):
             self.internal = FileLogger()
             try:
                 logging.config.fileConfig(OPT.config_file)
-            except Exception, e:
+            except:
                 self.internal = ConsoleLogger()
-                raise e
+                raise
+
             self.internal.setup()
         else:
             self.internal = NoneLogger()
 
-    def __getattr__( self, attr ):
+    def __getattr__(self, attr):
         if attr.startswith("__") and attr.endswith("__"):
             raise AttributeError, attr
+
         return getattr(self.internal, attr)
