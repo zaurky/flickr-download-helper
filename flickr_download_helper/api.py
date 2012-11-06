@@ -386,7 +386,7 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
     temp_groups_key = "%s%s" % (group_id, user_id or '')
     l_photos = INS.get('temp_groups', {}).get(temp_groups_key, [])
 
-    if not l_photos and os.path.exists(gpath):
+    if not user_id and not l_photos and os.path.exists(gpath):
         Logger().debug("load file %s" % gpath)
         l_photos = file_load(gpath) or []
 
