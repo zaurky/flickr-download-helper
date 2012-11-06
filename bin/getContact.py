@@ -36,8 +36,9 @@ line = []
 
 c = getUserFromID(api, contact_id, token)
 
-if OPT.getContactFields is not None:
+if OPT.getContactFields:
     for field in OPT.getContactFields:
-        if field in c: line.append(c[field].strip())
+        if field in c:
+            line.append(c[field].strip())
 
 print "\t".join(map(encode, line))
