@@ -265,8 +265,7 @@ def getContactList(api, token, page=1):
     rsp_json = json_request(api, token, 'contacts.getList',
         'error while getting the contact list',
         page=page, sort='time')
-    if not rsp_json: return []
-    if not rsp_json.get('contacts'): return []
+    if not (rsp_json and rsp_json.get('contacts')): return []
 
     content = rsp_json['contacts']['contact']
     total = int(rsp_json['contacts']['total'])
@@ -324,8 +323,7 @@ def groupFromScratch(api, token, group_id):
     Logger().info("groupFromScratch %s %s" % (group_id, total))
 
     def _get_path(batch):
-        return os.path.join(
-            OPT.groups_full_content_dir,
+        return os.path.join(OPT.groups_full_content_dir,
             "%s_%s" % (group_id, batch))
 
     page_in_batch = 100
@@ -381,21 +379,16 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
             if INS.get('put_group_in_session'):
                 INS['groups'][group_id] = content
 
-            if INS.get('temp_groups', {}).get(group_id):
-                del INS['temp_groups'][group_id]
-
+            INS.get('temp_groups', {}).pop(group_id)
             file_dump(gpath, content)
         return content
 
-    l_photos = []
-    if not user_id:
-        if INS.get('temp_groups', {}).get(group_id):
-            l_photos = INS['temp_groups'][group_id]
-        elif os.path.exists(gpath):
-            Logger().debug("load file %s" % gpath)
-            l_photos = file_load(gpath) or []
-    else:
-        l_photos = INS.get('temp_groups', {}).get("%s%s" % (group_id, user_id), [])
+    temp_groups_key = "%s%s" % (group_id, user_id or '')
+    l_photos = INS.get('temp_groups', {}).get(temp_groups_key, [])
+
+    if not l_photos and os.path.exists(gpath):
+        Logger().debug("load file %s" % gpath)
+        l_photos = file_load(gpath) or []
 
     if len(l_photos) >= g_size:
         return _cache_group(group_id, l_photos)
@@ -405,6 +398,7 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
         if i['id'] not in ids:
             l_photos.append(i)
 
+    # remove duplicates on id
     l_photos = dict(map(lambda x: (x['id'], x), l_photos)).values()
 
     Logger().debug("getGroupPhotos %d %d %d" % (len(l_photos), g_size, len(content)))
@@ -419,7 +413,7 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
         if g_size - total < 500:
             per_page = DEFAULT_PERPAGE
 
-        INS['temp_groups']["%s%s" % (group_id, user_id or '')] = content
+        INS['temp_groups'][temp_groups_key] = content
         content = getGroupPhotos(api, token, group_id, page+1, user_id, per_page=per_page)
 
     return content
@@ -454,7 +448,6 @@ def getUserPhotos(api, token, user_id, min_upload_date=None, page=1, limit=None)
 
 def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
     urls = {}
-
     length = len(photos)
 
     for (counter, photo) in enumerate(photos):
@@ -560,7 +553,7 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False, info=
 
     content = _downloadProtect(url)
 
-    if content == None: return 0
+    if not content: return 0
 
     old_filename = filename
     possible_files = [filename]
@@ -660,60 +653,43 @@ def restoreUser(user_id, backup_dir):
         ret = None
     return ret
 
+
+def _mkdir(destination, retrieve):
+    try:
+        if retrieve and not os.path.exists(destination):
+            os.mkdir(destination)
+    except Exception:
+        Logger().warn(destination)
+        raise
+
+
+def _mkdir_photoset(destination, retrieve):
+    _mkdir(os.path.dirname(destination), retrieve)
+    _mkdir(destination, retrieve)
+
+
 def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id, existing=None):
         photo_id2destination = {}
-        if existing == None:
+        if not existing:
             existing = Existing(user_id, user_name)
+
+        photoset_name = photoset_name.replace('/', '')
+        destination = os.path.join(opt.photo_dir, user_name, photoset_name)
 
         # prepare the photo directory
         Logger().info("\n== prepare the photo directory")
         try:
-            destination = os.path.join(opt.photo_dir, user_name)
-            try:
-                if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
-            except Exception:
-                Logger().warn(destination)
-                raise
-
-            if "/" in photoset_name: photoset_name = photoset_name.replace('/', '')
-
-            destination = os.path.join(destination, photoset_name)
-
-            try:
-                if opt.retrieve and not os.path.exists(destination): os.mkdir(destination)
-            except Exception:
-                Logger().warn(destination)
-                raise
-
+            _mkdir_photoset(destination, opt.retrieve)
         except OSError, e:
-            def _mkdir(destination):
-                if opt.retrieve and not os.path.exists(destination):
-                    os.mkdir(destination)
-
-            if e.errno == 28:
-                ret = waitFor("there is not enough space to continue, " \
-                    "please delete some files and try again")
-
-                if ret:
-                    destination = os.path.join(opt.photo_dir, user_name)
-                    _mkdir(destination)
-
-                    destination = os.path.join(destination, photoset_name)
-                    _mkdir(destination)
-
-                else:
-                    raise
-            elif e.errno == 13:
-                ret = waitFor("you dont have the permissions to access %s",
-                    destination)
-
-                if ret:
-                    destination = os.path.join(opt.photo_dir, user_name)
-                    _mkdir(destination)
-
-                    destination = os.path.join(destination, photoset_name)
-                    _mkdir(destination)
-
+            errors = {
+                28: "there is not enough space to continue, " \
+                    "please delete some files and try again",
+                13: "you dont have the permissions to access %s" % \
+                    destination,
+            }
+            if e.errno in errors:
+                if waitFor(errors[e.errno]):
+                    _mkdir_photoset(destination, opt.retrieve)
                 else:
                     raise
             else:
