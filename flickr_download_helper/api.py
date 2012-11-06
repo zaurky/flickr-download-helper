@@ -87,9 +87,9 @@ def json_request(api, token, method, message, msg_params, **kargs):
     kargs = dict(filter(lambda (k,v): v is not None, kargs.items()))
 
     request = Flickr.API.Request(**kargs)
-    request_args = str(filter(lambda arg:
+    request_args = str(dict(filter(lambda (arg, value):
         arg not in ('auth_token', 'format', 'nojsoncallback', 'method'),
-        request.args))
+        request.args.items())))
 
     Logger().debug("calling %s(%s)" % (method, request_args))
 
