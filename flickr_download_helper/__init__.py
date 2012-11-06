@@ -32,14 +32,14 @@ from datetime import date
 import simplejson as json
 
 
-def main_init(read_command_line = True):
+def main_init(read_command_line=True):
     config = OptConfigReader()
     config.setup()
 
     if read_command_line:
         opt = OptReader()
         ret = opt.read()
-        if ret != 0: return ret
+        if ret: return ret
 
     Logger().setup()
     Logger().warn("####################################################################")
@@ -56,15 +56,15 @@ def main_init(read_command_line = True):
         if r != 6:
             Logger().error("Couldn't init flickr api")
             Logger().error(r)
-        raise Exception("Couldn't init flickr api %s"%(str(r)))
+        raise Exception("Couldn't init flickr api %s" % (str(r)))
     return r
 
 
 def main(api, token):
-    photo_id2destination = {}
     user_name = None
-    infos = {}
     existing = None
+    photo_id2destination = {}
+    infos = {}
 
     if not os.path.exists(OPT.photo_dir) and OPT.retrieve:
         Logger().error("You want to download the photos, " \
@@ -74,11 +74,14 @@ def main(api, token):
 
     # create an id for the news_in_dir
     if OPT.new_in_dir:
-        OPT.new_in_dir = os.path.join(OPT.news_dir, time.strftime("%Y%m%d%H", time.localtime()))
+        OPT.new_in_dir = os.path.join(OPT.news_dir,
+            time.strftime("%Y%m%d%H", time.localtime()))
         if not os.path.exists(OPT.new_in_dir):
             os.mkdir(OPT.new_in_dir)
+
     if OPT.daily_in_dir:
-        OPT.daily_in_dir = os.path.join(OPT.news_dir, "daily", time.strftime("%Y%m%d", time.localtime()))
+        OPT.daily_in_dir = os.path.join(OPT.news_dir, "daily",
+            time.strftime("%Y%m%d", time.localtime()))
         if not os.path.exists(OPT.daily_in_dir):
             os.mkdir(OPT.daily_in_dir)
 
@@ -102,13 +105,11 @@ def main(api, token):
         elif url[0] == FDHPR.COLLECTION:
             OPT.collection_id = url[2]
         elif url[0] == FDHPR.PHOTO:
-            OPT.url = None
-            OPT.user_id = None
+            OPT.url = OPT.user_id = None
             OPT.photo_ids = (url[1])
         elif url[0] == FDHPR.PROFILE:
-            OPT.url = None
-            OPT.user_id = None
-            Logger().warn("I don't know what to do with that! %s"%(OPT.get_url))
+            OPT.url = OPT.user_id = None
+            Logger().warn("I don't know what to do with that! %s" % (OPT.get_url))
         elif url[0] == FDHPR.PHOTOSETS:
             OPT.sort_by_photoset = True
         elif url[0] == FDHPR.GROUP:
@@ -117,63 +118,74 @@ def main(api, token):
             group = searchGroup(api, token, url[2])
             OPT.group_id = group['id']
         elif url[0] in (FDHPR.ERROR, FDHPR.ERROR_NOURL, FDHPR.ERROR_NOTFLICKR):
-            OPT.url = None
-            OPT.user_id = None
-            Logger().error("error parsing OPT.get_url : %s"%(url[0]))
+            OPT.url = OPT.user_id = None
+            Logger().error("error parsing OPT.get_url : %s" % (url[0]))
 
     if OPT.photo_id_in_file:
         # work on a list of photos ids
         content = readFile(OPT.photo_id_in_file)
         content = content.split("\n")
-        while '' in content: content.remove('')
+        while '' in content:
+            content.remove('')
         OPT.photo_ids = content
 
     if OPT.photoset_id:
         # work on a photoset
         photoset = getPhotosetInfos(api, token, OPT.photoset_id)
+
         photoset_name = photoset['title']
 
         Logger().info("\n== get user information")
         user_id = photoset['owner']
+
         user = getUserFromID(api, user_id)
         user_name = user['username']
-        Logger().warn("username = %s"%user_name)
+
+        Logger().warn("username = %s" % user_name)
 
         existing = Existing(user_id, user_name)
 
-        urls, photo_id2destination, destination, infos = getPhotoset(OPT, api, token, user_name, OPT.photoset_id, photoset_name, user_id, existing)
+        urls, photo_id2destination, destination, infos = getPhotoset(
+            OPT, api, token, user_name, OPT.photoset_id, photoset_name, user_id, existing)
 
     elif OPT.photo_ids:
         Logger().info("\n== retrieve photos informations")
         photos = []
         photo_id2username = {}
+
         for photo_id in OPT.photo_ids:
             try:
                 photo = getPhotoInfo(api, token, photo_id)
             except:
                 # try again then continue
                 try:
-                    Logger().info("second try to get photo %s infos"%(photo_id))
+                    Logger().info("second try to get photo %s infos" % (photo_id))
                     photo = getPhotoInfo(api, token, photo_id)
                 except Exception, e:
-                    Logger().warn("can't get photo %s (%s)"%(photo_id, str(e)))
-            if photo == None:
-                Logger().warn("can't get photo %s"%photo_id)
+                    Logger().warn("can't get photo %s (%s)" % (photo_id, str(e)))
+
+            if not photo:
+                Logger().warn("can't get photo %s" % photo_id)
                 continue
+
             username = photo['owner']['username']
             photo_id2username[photo_id] = username
             photos.append(photo)
             infos[photo['id']] = photo
 
         Logger().info("\n== prepare the photo directory")
+
         if OPT.sort_by_user:
             for photo_id in photo_id2username:
                 user_name = photo_id2username[photo_id]
                 if re.search("/", user_name):
                     user_name = user_name.replace("/", "##")
+
                 destination = os.path.join(OPT.photo_dir, user_name)
                 photo_id2destination[photo_id] = destination
-                if OPT.retrieve and not os.path.exists(destination): os.mkdir(destination)
+
+                if OPT.retrieve and not os.path.exists(destination):
+                    os.mkdir(destination)
 
         Logger().info("\n== get all photos url")
         urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
@@ -190,127 +202,151 @@ def main(api, token):
 
         # getting user's informations
         Logger().info("\n== get user information")
+
         user_name = user['username']
         user_id = user['id']
-        Logger().warn("username = %s"%user_name)
+
+        Logger().warn("username = %s" % user_name)
 
         if not OPT.scan_groups:
             existing = Existing(user_id, user_name)
 
         if OPT.collection_id:
             Logger().info("\n== getting collection %s"%OPT.collection_id)
+
             OPT.sort_by_user = True
             photosets = getCollectionPhotosets(api, token, OPT.collection_id, user_id)
             urls = {}
             photo_id2destination = {}
             destination = ""
+
             for photoset in photosets:
                 Logger().info("\n== getting photoset %s"%photoset['title'])
-                l_urls, l_photo_id2destination, destination, infos = getPhotoset(OPT, api, token, user_name, photoset['id'], photoset['title'], user_id, existing)
+                l_urls, l_photo_id2destination, destination, infos = getPhotoset(
+                    OPT, api, token, user_name, photoset['id'],
+                    photoset['title'], user_id, existing)
+
                 urls = extends(urls, l_urls)
                 photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
 
         elif OPT.sort_by_photoset:
             Logger().info("\n== getting user (%s) photoset"%user_id)
+
             OPT.sort_by_user = True
             photosets = getUserPhotosets(api, token, user_id)
             urls = {}
             photo_id2destination = {}
             destination = ""
+
             for photoset in photosets:
-                Logger().info("\n== getting photoset %s"%photoset['title'])
-                l_urls, l_photo_id2destination, destination, l_infos = getPhotoset(OPT, api, token, user_name, photoset['id'], photoset['title'], user_id, existing)
+                Logger().info("\n== getting photoset %s" % photoset['title'])
+
+                l_urls, l_photo_id2destination, destination, l_infos = getPhotoset(
+                    OPT, api, token, user_name, photoset['id'],
+                    photoset['title'], user_id, existing)
+
                 urls = extends(urls, l_urls)
                 photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
                 infos = extends(infos, l_infos)
 
         elif OPT.try_from_groups or OPT.scan_groups:
             if OPT.group_id:
-                groups = [{'name':OPT.group_id, 'nsid':OPT.group_id}]
+                groups = [{'name': OPT.group_id, 'nsid': OPT.group_id}]
             else:
                 if OPT.try_from_groups:
-                    Logger().info("\n== trying to get users (%s) photos from groups"%user_id)
+                    Logger().info("\n== trying to get users (%s) photos " \
+                        "from groups" % user_id)
+
                     groups = getUserGroups(api, token, user_id, page = 1)
                 elif OPT.scan_groups:
-                    Logger().info("\n== trying to get users (%s) photos from %s groups"%(user_id, OPT.my_id))
+                    Logger().info("\n== trying to get users (%s) photos " \
+                        "from %s groups" % (user_id, OPT.my_id))
+
                     if isinstance(OPT.scan_groups, bool):
-                        OPT.scan_groups = {'IAMADICT':True}
+                        OPT.scan_groups = {'IAMADICT': True}
 
                     if isinstance(OPT.scan_groups, dict) and 'groups' in OPT.scan_groups:
                         groups = OPT.scan_groups['groups']
                     else:
-                        groups = getUserGroups(api, token, OPT.my_id, page = 1)
+                        groups = getUserGroups(api, token, OPT.my_id, page=1)
                         OPT.scan_groups['groups'] = groups
 
             photos = []
             index = 0
 
             for group in groups[0:750]:
-                Logger().info("\n== getting group %s (%s) [%s/%s]"%(group['name'], group['nsid'], index, len(groups)))
+                group_id = group['nsid']
 
-                if OPT.scan_groups:
-                    l_photos = getGroupPhotos(api, token, group['nsid'], per_page=500)
-                    count = 0
+                Logger().info("\n== getting group %s (%s) [%s/%s]" % (
+                    group['name'], group_id, index, len(group_id)))
+
+                count = 0
+
+                kargs = {'user_id': user_id, 'per_page': 500}
+
+                if OPT.scan_group_id:
+                    kargs.pop('user_id')
+
+                l_photos = getGroupPhotos(api, token, group_id, **kargs)
+
+                if OPT.scan_group_id or OPT.force_group_verbose:
                     for l_photo in l_photos:
                         if l_photo['owner'] == user_id:
                             count += 1
                             photos.append(l_photo)
-                    if count != 0:
-                        Logger().debug("got %i photos in group %s"%(count, group['nsid']))
-
-                elif OPT.force_group_verbose:
-                    l_photos = getGroupPhotos(api, token, group['nsid'], user_id = user_id, per_page=500)
-                    count = 0
-                    for l_photo in l_photos:
-                        if l_photo['owner'] == user_id:
-                            count += 1
-                            photos.append(l_photo)
-                    if count != 0:
-                        Logger().debug("got %i photos in group %s"%(count, group['nsid']))
-
                 else:
-                    l_photos = getGroupPhotos(api, token, group['nsid'], user_id = user_id, per_page=500)
-                    if len(l_photos) != 0:
-                        Logger().debug("got %i photos in group %s"%(len(l_photos), group['nsid']))
+                    count = len(l_photos)
                     photos.extend(l_photos)
+
+                if count:
+                    Logger().debug("got %i photos in group %s" % (count, group_id))
+
                 index += 1
 
             total = len(photos)
             # user_id ok
-            if OPT.scan_groups and len(photos) > 0:
+            if OPT.scan_groups and len(photos):
                 existing = Existing(user_id, user_name)
 
-            if len(photos) > 0:
+            if len(photos):
                 photos = existing.grepPhotosDontExists(photos)
 
-            total_after_filter = len(photos)
-            if total != total_after_filter:
-                Logger().info("filter %d photos" % (total - total_after_filter))
-            for photo in photos: infos[photo['id']] = photo
+            diff = total - len(photos)
+            if diff:
+                Logger().info("filter %d photos" % (diff))
+
+            for photo in photos:
+                infos[photo['id']] = photo
+
             urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
-            if '/' in user_name: user_name = user_name.replace("/", "##")
+
+            user_name = user_name.replace("/", "##")
+
             destination = os.path.join(OPT.photo_dir, user_name)
             try:
-                if OPT.retrieve and not os.path.exists(destination): os.mkdir(destination)
-            except Exception, e:
+                if OPT.retrieve and not os.path.exists(destination):
+                    os.mkdir(destination)
+            except:
                 Logger().warn(destination)
                 raise
 
         elif OPT.tags or OPT.group_id:
             if OPT.tags:
-                Logger().info("\n== getting photos in tag %s"%OPT.tags)
+                Logger().info("\n== getting photos in tag %s" % OPT.tags)
                 photos = getPhotosByTag(api, token, user_id, OPT.tags)
             else:
-                Logger().info("\n== getting user %s files in group %s"%(user_name, OPT.group_id))
-                photos = getGroupPhotos(api, token, OPT.group_id, user_id = user_id, per_page=500)
+                Logger().info("\n== getting user %s files in group %s" % (user_name, OPT.group_id))
+                photos = getGroupPhotos(
+                    api, token, OPT.group_id, user_id=user_id, per_page=500)
 
             total = len(photos)
             # user_id ok
             existing = Existing(user_id, user_name)
             photos = existing.grepPhotosDontExists(photos)
-            total_after_filter = len(photos)
-            if total != total_after_filter:
-                Logger().info("filter %d photos" % (total - total_after_filter))
+
+            diff = total - len(photos)
+            if diff:
+                Logger().info("filter %d photos" % (diff))
 
             for photo in photos:
                 infos[photo['id']] = photo
@@ -329,26 +365,23 @@ def main(api, token):
         else:
             # prepare the photo directory
             Logger().info("\n== prepare the photo directory")
-            if re.search("/", user_name):
-                user_name = user_name.replace("/", "##")
+            user_name = user_name.replace("/", "##")
 
             destination = os.path.join(OPT.photo_dir, user_name)
 
             try:
-                Logger().debug('look if %s exists, else create it'%destination)
-                if OPT.retrieve and not os.path.exists(destination): os.mkdir(destination)
+                Logger().debug('look if %s exists, else create it' % destination)
+                if OPT.retrieve and not os.path.exists(destination):
+                    os.mkdir(destination)
             except OSError, e:
-                Logger().error("%s: %s (%s)"%(e.errno, e.filename, e.strerror))
+                Logger().error("%s: %s (%s)" % (e.errno, e.filename, e.strerror))
                 raise
             except UnicodeEncodeError, e:
-                Logger().error(e)
                 Logger().error(str(e))
-                Logger().error(dir(e))
                 Logger().error(e.message)
                 raise
             except Exception, e:
                 Logger().error(str(e))
-                Logger().error(dir(e))
                 Logger().print_tb(e)
                 raise
 
@@ -357,7 +390,8 @@ def main(api, token):
                 Logger().info("\n== get the files'URL from a backup file")
                 urls = restoreUser(user_id, OPT.backup_dir)
                 if not urls:
-                    Logger().error("couldn't restore the backup for that user %s"%(user_id))
+                    Logger().error("couldn't restore the backup " \
+                        "for that user %s" % (user_id))
                     return (5, 0)
             else:
                 Logger().info("\n== get the files'URL from flick API")
@@ -365,14 +399,16 @@ def main(api, token):
                     photos = getUserPhotos(api, token, user_id, OPT.since)
                 else:
                     photos = getUserPhotos(api, token, user_id)
+
                 total = len(photos)
                 # user_id ok
                 photos = existing.grepPhotosDontExists(photos)
-                total_after_filter = len(photos)
-                if total != total_after_filter:
-                    Logger().info("filter %d photos" % (total - total_after_filter))
 
-                if len(infos) == 0:
+                diff = total - len(photos)
+                if diff:
+                    Logger().info("filter %d photos" % (diff))
+
+                if not len(infos):
                     for photo in photos:
                         infos[photo['id']] = photo
 
@@ -388,10 +424,9 @@ def main(api, token):
 
     # retrieving files
     Logger().info("\n== retrieve files")
-    total_size = 0
-    total = 0
-    count_url = len(urls.keys())
-    Logger().info("sort_by_user %s"%str(OPT.sort_by_user))
+    total_size = total = 0
+    count_url = len(urls)
+    Logger().info("sort_by_user %s" % str(OPT.sort_by_user))
 
     for id, url in urls.items():
         if OPT.retrieve:
@@ -404,26 +439,31 @@ def main(api, token):
             if os.path.exists(filename) and not OPT.force:
                 if OPT.user_id and OPT.user_id in OPT.check_md5:
                     # TODO check the md5 or the size for users in OPT.check_md5:
-                    Logger().info("%s> check %s"% (id, filename))
-                    size = downloadPhotoFromURL(url, filename, existing, True, info = info)
-                    if size == 0:
-                        Logger().info("%s> is the same"%(id))
+                    Logger().info("%s> check %s" % (id, filename))
+
+                    size = downloadPhotoFromURL(
+                        url, filename, existing, True, info=info)
+
+                    if not size:
+                        Logger().info("%s> is the same" % (id))
                         count_url -= 1
                     else:
-                        Logger().info("%s> got a new one"%(id))
+                        Logger().info("%s> got a new one" % (id))
                         total_size += size
                         total += 1
-                        Logger().info("%i/%i %s : %i"%(total, count_url, id, size))
+
+                        Logger().info("%i/%i %s : %i" % (total, count_url, id, size))
                         time.sleep(OPT.sleep_time)
                 else:
                     Logger().info("%s> already exists (%s)" % (id, filename))
                     count_url -= 1
 
             else:
-                size = downloadPhotoFromURL(url, filename, existing, info = info)
+                size = downloadPhotoFromURL(url, filename, existing, info=info)
                 total_size += size
                 total += 1
-                Logger().info("%i/%i %s : %i"%(total, count_url, id, size))
+
+                Logger().info("%i/%i %s : %i" % (total, count_url, id, size))
                 time.sleep(OPT.sleep_time)
 
         else:
@@ -433,15 +473,17 @@ def main(api, token):
         Logger().info(destination)
 
     if OPT.retrieve:
-        if total == 0:
-            Logger().info("download %i file for %i octets"%(total, total_size))
+        if not total:
+            Logger().info("download 0 file for 0 octets")
         else:
-            if hasattr(OPT, 'has_been_download') and user_name != None:
+            if hasattr(OPT, 'has_been_download') and user_name:
                 OPT.has_been_download[user_name] = [total, total_size]
-            Logger().warn("download %i file for %i octets"%(total, total_size))
-            DownloadFile().write("%s %s %s"%(str(datetime.datetime.now()), total, user_name))
 
-    if existing and len(urls) > 0:
+            Logger().warn("download %i file for %i octets" % (total, total_size))
+            DownloadFile().write("%s %s %s" % (
+                str(datetime.datetime.now()), total, user_name))
+
+    if existing and len(urls):
         # we only save photo cache when something has been downloaded
         existing.backupToFile()
 
