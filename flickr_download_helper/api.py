@@ -66,7 +66,7 @@ def selectMediaURL(sizes, media_type):
 
 #################################
 
-def json_request2(api, token, method, **kargs):
+def json_request(api, token, method, message, msg_params, **kargs):
     if token:
         kargs['auth_token'] = token
 
@@ -81,8 +81,7 @@ def json_request2(api, token, method, **kargs):
         'timeout': 10,
     })
 
-    msg = 'error while getting ' + kargs.pop('message', '%s') + ' (%s)'
-    msg_params = kargs.pop('message_params', [])
+    msg = 'error while getting ' + message + ' (%s)'
 
     # XXX this is debug
     kargs = dict(filter(lambda (k,v): v is not None, kargs.items()))
@@ -99,7 +98,7 @@ def json_request2(api, token, method, **kargs):
     except urllib2.HTTPError, e:
         if e.code == 500:
             # try again
-            response = api.execute_request(request, sign=True)
+            resp = api.execute_request(request, sign=True)
         else:
             raise
     except urllib2.URLError, e:
@@ -116,10 +115,6 @@ def json_request2(api, token, method, **kargs):
             return None
 
     return parseResponse(resp, msg, msg_params)
-
-def json_request(api, token, method, message, message_params, **kargs):
-    kargs.update({'message': message, 'message_params': message_params})
-    return json_request2(api, token, method, **kargs)
 
 
 #################################
