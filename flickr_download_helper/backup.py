@@ -5,10 +5,12 @@ import shutil
 import time
 import os
 
+
 class GenericBackup:
     def backupToFile(self, filename, obj):
         if os.path.exists(filename):
-            shutil.move(filename, "%s.bkp"%(filename))
+            shutil.move(filename, "%s.bkp" % (filename))
+
         f = open(filename, 'wb')
         pickle.dump(obj, f)
         f.close()
@@ -16,26 +18,23 @@ class GenericBackup:
     def loadBackup(self, filename):
         if not os.path.exists(filename):
             return None
+
         f = open(filename)
         obj = pickle.load(f)
         f.close()
+
         return obj
+
 
 class PhotosBackup(GenericBackup, Singleton):
     """
     self.photos = {
-        'user_id': [
-            time.time(),
-            {
-                photo_id : photo,
-                ...
-            }
-        ],
+        'user_id': [time.time(), {photo_id : photo, ...}],
         ....
-
     }
     """
     photos = {}
+
     def refreshPhotos(self):
         pass
 
@@ -45,15 +44,11 @@ class PhotosBackup(GenericBackup, Singleton):
     def init(self):
         self.filename = OPT.photos_backup_file
 
+
 class FavoritesBackup(GenericBackup, Singleton):
     """
     self.favorites = {
-        'user_id': [
-            time.time(),
-            [
-                sorted list of photos
-            ]
-        ],
+        'user_id': [time.time(), [sorted list of photos] ],
         ....
     }
     """
@@ -77,13 +72,14 @@ class FavoritesBackup(GenericBackup, Singleton):
                 min_fave_date = self.favorites[user_id][0]
             else:
                 self.favorites[user_id] = [self.time, []]
+
             photos = getUserFavorites(self.api, self.token, user_id, min_fave_date=min_fave_date)
             self.favorites[user_id][0] = self.time
 
             h_photos = {}
             for photo in photos:
                 photo['contact'] = contact
-                h_photos[photo[u'dateupload']] = photo
+                h_photos[photo['dateupload']] = photo
 
             h_photos_keys = h_photos.keys()
             h_photos_keys.sort()
@@ -99,29 +95,33 @@ class FavoritesBackup(GenericBackup, Singleton):
         h_photos = {}
         for user_id in self.favorites:
             for photo in self.favorites[user_id][1]:
-                h_photos[photo[u'dateupload']] = photo
+                h_photos[photo['dateupload']] = photo
+
         h_photos_keys = h_photos.keys()
         h_photos_keys.sort()
+
         for k in h_photos_keys:
             self.ordered_photos.append(h_photos[k])
 
     def init(self):
         self.filename = OPT.favorites_file
-        self.filtering_file = "%s.filter"%self.filename
+        self.filtering_file = "%s.filter" % self.filename
 
         self.api, self.token = initialisationFlickrApi(OPT)
 
         # RESTORE FAVORITES
         obj = self.loadBackup(self.filename)
-        if obj != None:
+        if obj:
             self.time = obj[0]
             self.favorites = obj[1]
 
         if self.time < time.time() - self.refresh_time:
             self.refreshFavorites()
+
         self.orderPhoto()
 
     def getFavorites(self):
         return self.ordered_photos
 
-    def getPhotos(self): return self.getFavorites()
+    def getPhotos(self):
+        return self.getFavorites()
