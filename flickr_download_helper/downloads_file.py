@@ -1,26 +1,29 @@
 from flickr_download_helper.config import OPT, Singleton
-from flickr_download_helper.logger import Logger
 from flickr_download_helper.existing import mkdir_p
-import shutil
-import os, errno
+import os
+
 
 class DownloadFile(Singleton):
-    file = None
+    _file = None
+
     def write(self, content):
-        if self.file is None:
+        if self._file is None:
             filename = OPT.downloads_file
             try:
                 dirname = os.path.dirname(filename)
-                if not os.path.exists(dirname): mkdir_p(dirname)
-                self.file = open(filename, 'ab')
+                if not os.path.exists(dirname):
+                    mkdir_p(dirname)
+
+                self._file = open(filename, 'ab')
             except OSError, e:
                 if e.errno == 28:
-                    ret = waitFor("there is not enough space to continue, please delete some files and try again")
-                    if ret:
-                        self.file = open(filename, 'ab')
+                    if waitFor("there is not enough space to continue, " \
+                            "please delete some files and try again"):
+                        self._file = open(filename, 'ab')
                     else:
-                        raise e
+                        raise
                 else:
-                    raise e
-        self.file.write("%s\n"%(content.encode('utf8')))
-        self.file.flush()
+                    raise
+
+        self._file.write(content.encode('utf8') + "\n")
+        self._file.flush()
