@@ -7,6 +7,7 @@ import flickr_download_helper
 from flickr_download_helper.api import groupFromScratch, getUserGroups
 
 import os
+import shutil
 
 api, token = flickr_download_helper.main_init(False)
 
@@ -17,10 +18,8 @@ for group in groups:
     group_id = group['nsid']
     if group_id in OPT.skiped_group:
         continue
-    if os.path.exists(os.path.join(OPT.groups_full_content_dir, group_id)):
-        continue
-    if os.path.exists(os.path.join(OPT.groups_full_content_dir,
-            "%s_0" % group_id)):
-        continue
+
     Logger().warn("scan_group %d/%d"%(i, len(groups)))
     groupFromScratch(api, token, group_id)
+    filepath = "%s_0" % os.path.join(OPT.groups_full_content_dir, group_id)
+    shutil.move(filepath, os.path.join(OPT.groups_full_content_dir, group_id))
