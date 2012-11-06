@@ -1,7 +1,9 @@
 class FlickrDownloadHelperErrorTypes:
     DISPLAY_HELP = 1
 
+
 FDHET = FlickrDownloadHelperErrorTypes
+
 
 class FlickrDownloadHelperParserResponse:
     USER = 1
@@ -17,5 +19,6 @@ class FlickrDownloadHelperParserResponse:
     ERROR = 10
     ERROR_NOURL = 11
     ERROR_NOTFLICKR = 12
+
 
 FDHPR = FlickrDownloadHelperParserResponse
