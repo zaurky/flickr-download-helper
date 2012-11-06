@@ -19,8 +19,9 @@ if __name__ == "__main__":
         api, token = flickr_download_helper.main_init()
         ret, num = flickr_download_helper.main(api, token)
         sys.exit(ret)
-    except Exception, e:
+    except:
         info = sys.exc_info()
+
         if OPT.debug:
             try:
                 Logger().error(info[1])
@@ -35,4 +36,5 @@ if __name__ == "__main__":
             except:
                 print info[1]
                 traceback.print_tb(info[2])
+
         sys.exit(-1)
