@@ -15,10 +15,11 @@ def saveToken(token, token_file):
 
 def checkToken(api, token):
     # if we have a token, we check it's still good and put it to None if it's no longer valid
-    Logger().debug("debug: calling %s" % ('flickr.auth.checkToken'))
+    Logger().debug("debug: calling flickr.auth.checkToken")
     check_request = Flickr.API.Request(
         method='flickr.auth.checkToken', auth_token=token, timeout=60)
     check_rsp = api.execute_request(check_request)
+
     # if the request fail, that mean we need to generate the token again
     if check_rsp.code != 200:
         Logger().info("the token is no longer valid")
@@ -28,9 +29,10 @@ def checkToken(api, token):
 
 def getToken(api, token_file):
     # get the auth frob
-    Logger().debug("debug: calling %s" % ('flickr.auth.getFrob'))
+    Logger().debug("debug: calling flickr.auth.getFrob")
     frob_request = Flickr.API.Request(method='flickr.auth.getFrob', timeout=60)
     frob_rsp = api.execute_request(frob_request)
+
     if frob_rsp.code == 200:
         frob_rsp_et = xml.etree.ElementTree.parse(frob_rsp)
         if frob_rsp_et.getroot().get('stat') == 'ok':
@@ -45,12 +47,11 @@ def getToken(api, token_file):
 
     # WARNING to what to do in non interactive mode
     Logger().info("auth me:  %s" % (auth_url))
-    input = raw_input("done [y]: ")
-    if input.lower() not in ('', 'y', 'Y'):
+    if raw_input("done [y]: ").lower() not in ('', 'y', 'Y'):
         sys.exit()
 
     # get the token
-    Logger().debug("debug: calling %s" % ('flickr.auth.getToken'))
+    Logger().debug("debug: calling flickr.auth.getToken")
     token_rsp = api.execute_request(Flickr.API.Request(
         method='flickr.auth.getToken', frob=frob, format='json',
         nojsoncallback=1, timeout=60
@@ -64,9 +65,9 @@ def getToken(api, token_file):
             # put the token in the configuration directory
             saveToken(token, token_file)
         else:
-            raise Exception("can't get the token! err = %s"%(str(token_rsp_json['message'])))
+            raise Exception("can't get the token! err = %s" % (str(token_rsp_json['message'])))
     else:
-        raise Exception("can't get the token! err code = %s"%(str(token_rsp.code)))
+        raise Exception("can't get the token! err code = %s" % (str(token_rsp.code)))
 
     return token
 
