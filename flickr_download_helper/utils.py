@@ -59,3 +59,12 @@ def readFile(filename):
         return ret
     else:
         Logger().error("file not found %s" % filename)
+
+
+def mkdir(destination):
+    try:
+        if OPT.retrieve and not os.path.exists(destination):
+            os.mkdir(destination)
+    except:
+        Logger().warn(destination)
+        raise

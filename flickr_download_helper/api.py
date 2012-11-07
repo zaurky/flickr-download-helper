@@ -8,7 +8,7 @@ from flickr_download_helper.existing import file_load, file_dump
 from flickr_download_helper.token import initialisationFlickrApi
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
-from flickr_download_helper.utils import waitFor, readFile
+from flickr_download_helper.utils import waitFor, readFile, mkdir
 from flickr_download_helper.flickr import json_request
 from flickr_download_helper import exif
 import xml.etree.ElementTree
@@ -567,18 +567,9 @@ def restoreUser(user_id, backup_dir):
     return ret
 
 
-def _mkdir(destination, retrieve):
-    try:
-        if retrieve and not os.path.exists(destination):
-            os.mkdir(destination)
-    except Exception:
-        Logger().warn(destination)
-        raise
-
-
 def _mkdir_photoset(destination, retrieve):
-    _mkdir(os.path.dirname(destination), retrieve)
-    _mkdir(destination, retrieve)
+    mkdir(os.path.dirname(destination))
+    mkdir(destination)
 
 
 def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id, existing=None):
