@@ -119,7 +119,7 @@ def getUserLastPhotos(api, token, user_id, since, page=1):
     total = int(rsp_json['photos']['total'])
 
     if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-        content.extend(getUserPhotos(api, token, user_id, page+1))
+        content.extend(getUserLastPhotos(api, token, user_id, since, page+1))
 
     return content
 
