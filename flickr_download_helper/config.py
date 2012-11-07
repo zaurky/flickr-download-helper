@@ -369,3 +369,7 @@ class OptReader(Singleton):
 
 OPT=Options()
 INS=InternalSession()
+
+
+DEFAULT_PERPAGE = 100
+
