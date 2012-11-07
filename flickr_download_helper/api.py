@@ -127,7 +127,7 @@ def getPhotosByTag(api, token, user_id, tags, page=1):
     rsp_json = json_request(api, token, 'photos.search',
         "error while searching photos",
         user_id=user_id, tags=tags, content_type=7, page=page)
-    if not rsp_json: return None
+    if not rsp_json: return
 
     content = rsp_json['photos']['photo']
     total = int(rsp_json['photos']['total'])
@@ -316,7 +316,7 @@ def getUserPhotos(api, token, user_id, min_upload_date=None, page=1, limit=None)
     content = rsp_json['photos']['photo']
     total = int(rsp_json['photos']['total'])
 
-    if limit is not None:
+    if limit:
         return content
 
     if len(content) + (page - 1) * per_page != total:
@@ -329,21 +329,19 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
     length = len(photos)
 
     for (counter, photo) in enumerate(photos):
-        if thumb and 'url_sq' in photo:
-            url = photo['url_sq']
-        elif not thumb and 'url_o' in photo:
-            url = photo['url_o']
-        elif not thumb and 'url_l' in photo:
-            url = photo['url_l']
-        elif not thumb and 'url_m' in photo:
-            url = photo['url_m']
-        else:
+        if thumb:
+            url = photo.get('url_sq')
+        elif not thumb:
+            url = photo.get('url_o', photo.get('url_l', photo.get('url_m')))
+
+        if not url:
             Logger().info("%i/%i get photo size" % (counter + 1, length))
-            if fast_photo_url and (photo.get('media') == 'photo' or 'media' not in photo):
+
+            if fast_photo_url and photo.get('media', 'photo') == 'photo':
                 url = getThumbURL(photo) if thumb else getPhotoURL(photo)
             else:
                 sizes = getPhotoSize(api, token, photo['id'])
-                if sizes == None:
+                if not sizes:
                     Logger().error("can't get photo size for %s " \
                         "(the photo is not going to be retrieve)" % photo['id'])
                     continue
@@ -351,7 +349,7 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
                 if thumb:
                     url = selectSmallerPhotoSizeURL(sizes)
                 else:
-                    if 'media' in photo and photo['media'] != 'photo':
+                    if photo.get('media', 'photo') != 'photo':
                         url = selectMediaURL(sizes, photo['media'])
                         Logger().info("Get the video %s" % (url))
                         DownloadFile().write("%s video %s" % (str(datetime.now()), url))
@@ -511,7 +509,7 @@ def restoreUser(user_id, backup_dir):
         f.close()
     else:
         Logger().error("while restoring %s (file not found)" % user_id)
-        ret = None
+        return
     return ret
 
 
