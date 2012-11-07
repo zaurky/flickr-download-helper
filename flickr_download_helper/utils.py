@@ -1,5 +1,6 @@
 from flickr_download_helper.config import OPT
 from flickr_download_helper.logger import Logger
+import urllib2
 import sys
 import re
 import os
@@ -68,3 +69,15 @@ def mkdir(destination):
     except:
         Logger().warn(destination)
         raise
+
+
+def downloadProtect(url, nb_tries=5):
+    if nb_tries <= 0:
+        return None
+
+    try:
+        return urllib2.urlopen(url).read()
+    except urllib2.URLError, e:
+        return downloadProtect(url, nb_tries-1)
+    except Exception, e:
+        Logger().error("while downloading the file from %s (e: %s)" % (url, str(e)))

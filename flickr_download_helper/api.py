@@ -8,7 +8,8 @@ from flickr_download_helper.existing import file_load, file_dump
 from flickr_download_helper.token import initialisationFlickrApi
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
-from flickr_download_helper.utils import waitFor, readFile, mkdir
+from flickr_download_helper.utils import (waitFor, readFile, mkdir,
+    downloadProtect)
 from flickr_download_helper.flickr import json_request
 from flickr_download_helper import exif
 import xml.etree.ElementTree
@@ -17,7 +18,6 @@ import os
 import re
 import md5
 import marshal
-import urllib2
 from datetime import datetime
 
 
@@ -444,17 +444,6 @@ def getUser(api, token):
     else:
         return getUserFromID(api, OPT.user_id)
 
-def _downloadProtect(url, nb_tries=5):
-    if nb_tries <= 0:
-        return None
-
-    try:
-        return urllib2.urlopen(url).read()
-    except urllib2.URLError, e:
-        return _downloadProtect(url, nb_tries-1)
-    except Exception, e:
-        Logger().error("while downloading the file from %s (e: %s)" % (url, str(e)))
-
 def downloadPhotoFromURL(url, filename, existing=None, check_exists=False, info=None):
     if not check_exists and os.path.exists(filename):
         Logger().info("%s exists"%info['id'])
@@ -464,7 +453,7 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False, info=
         Logger().info("%s exists"%info['id'])
         return 0
 
-    content = _downloadProtect(url)
+    content = downloadProtect(url)
 
     if not content: return 0
 
