@@ -493,37 +493,16 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
 def searchGroup(api, token, group_name):
     return searchGroupByUrl(api, token, 'http://www.flickr.com/groups/%s' % group_name)
 
-def getUserFromUrl(api, url, from_nick = False):
-    Logger().debug("calling %s" % ('urls.lookupUser'))
-
-    request = Flickr.API.Request(method='flickr.urls.lookupUser', url=url, format='json', nojsoncallback=1)
-    response = api.execute_request(request, sign=True)
-
-    if response.code != 200:
-        if from_nick:
-            raise Exception('error: %s' % str(response.code))
-        else:
-            Logger().error("while looking up for url %s (error: %s)" % (url, str(response.code)))
-            return None
-
-    rsp_json = simplejson.load(response)
-    if rsp_json['stat'] != 'ok':
-        if from_nick:
-            raise Exception(rsp_json['message'])
-        else:
-            Logger().error("while looking up for url %s (%s)" % (url, rsp_json['message']))
-            return None
-
-    user = rsp_json['user']
-    return contentFix(user)
+def getUserFromUrl(api, url, from_nick=False):
+    rsp_json = json_request(api, None, 'urls.lookupUser',
+        "lookup for user url %s", [url], url=url)
+    return rsp_json['user'] if rsp_json else {}
 
 def getUserFromNick(api, nick):
-    url = getUserURL(nick)
     try:
-        return getUserFromUrl(api, url)
+        return getUserFromUrl(api, getUserURL(nick))
     except Exception, e:
         Logger().error("while looking up for user %s (%s)" % (nick, e.message))
-        return None
 
 def getUserFromAll(api, u_string):
     for func in (
@@ -531,7 +510,22 @@ def getUserFromAll(api, u_string):
         user = func(api, u_string)
         if user: return user
 
-    return None
+def getUser(api, token):
+    Logger().info("\n== get user_id")
+
+    if not OPT.user_id:
+        if OPT.url:
+            return getUserFromUrl(api, OPT.url)
+        elif OPT.nick:
+            return getUserFromNick(api, OPT.nick)
+        elif OPT.username:
+            return getUserFromUsername(api, OPT.username)
+        else:
+            Logger().error("can't get any user_id")
+    elif OPT.user_hash.get(OPT.user_id):
+        return OPT.user_hash[OPT.user_id]
+    else:
+        return getUserFromID(api, OPT.user_id)
 
 def _downloadProtect(url, nb_tries=5):
     if nb_tries <= 0:
@@ -730,25 +724,3 @@ def getStaticContactList():
         return filter(lambda line: '@' in line, content.split('\n'))
 
     return []
-
-def getUser(api, token):
-    Logger().info("\n== get user_id")
-
-    if not OPT.user_id:
-        if OPT.url:
-            user = getUserFromUrl(api, OPT.url)
-        elif OPT.nick:
-            user = getUserFromNick(api, OPT.nick)
-        elif OPT.username:
-            user = getUserFromUsername(api, OPT.username)
-        else:
-            Logger().error("can't get any user_id")
-            return None
-
-    elif OPT.user_hash.get(OPT.user_id):
-        user = OPT.user_hash[OPT.user_id]
-
-    else:
-        user = getUserFromID(api, OPT.user_id)
-
-    return user
