@@ -5,6 +5,10 @@ import sys
 import re
 import os
 
+SIZES = ['Thumbnail', 'Square', 'Medium', 'Large', 'Original']
+INV_SIZES = list(SIZES)
+INV_SIZES.reverse()
+
 
 #################### UTILITIES
 def waitFor(message, *attr):
@@ -52,6 +56,49 @@ def get_video(filename):
     return True
 
 
+def _getPicUrl(photo, format):
+    return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg" % (
+        photo['farm'], photo['server'], photo['id'], photo['secret'], format)
+
+
+def getThumbURL(photo):
+    return _getPicUrl(photo, 's')
+
+
+def getPhotoURL(photo):
+    return _getPicUrl(photo, 'b')
+
+
+def getUserURL(nick):
+    return "http://www.flickr.com/photos/%s" % (nick)
+
+
+def getVideoURL(photo):
+    return "http://www.flickr.com/photos/%s/%s/play/orig/%s/" % (
+        photo['owner'], photo['id'], photo['secret'])
+
+
+def _selectPhotoSizeURL(sizes, order):
+    for s in order:
+        for size in sizes:
+            if size['label'] == s:
+                return size['source']
+
+
+def selectSmallerPhotoSizeURL(sizes):
+    return _selectPhotoSizeURL(sizes, SIZES)
+
+
+def selectBiggerPhotoSizeURL(sizes):
+    return _selectPhotoSizeURL(sizes, INV_SIZES)
+
+
+def selectMediaURL(sizes, media_type):
+    for size in sizes:
+        if size['media'] == media_type:
+            return size['url']
+
+
 def readFile(filename):
     if os.path.exists(filename):
         f = open(filename, "rb")
@@ -73,7 +120,7 @@ def mkdir(destination):
 
 def downloadProtect(url, nb_tries=5):
     if nb_tries <= 0:
-        return None
+        return
 
     try:
         return urllib2.urlopen(url).read()

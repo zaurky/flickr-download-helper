@@ -9,7 +9,8 @@ from flickr_download_helper.token import initialisationFlickrApi
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
 from flickr_download_helper.utils import (waitFor, readFile, mkdir,
-    downloadProtect)
+    downloadProtect, getThumbURL, getPhotoURL, getUserURL,
+    selectSmallerPhotoSizeURL, selectBiggerPhotoSizeURL, selectMediaURL)
 from flickr_download_helper.flickr import json_request
 from flickr_download_helper import exif
 import xml.etree.ElementTree
@@ -20,48 +21,6 @@ import md5
 import marshal
 from datetime import datetime
 
-
-SIZES = ['Thumbnail', 'Square', 'Medium', 'Large', 'Original']
-INV_SIZES = list(SIZES)
-INV_SIZES.reverse()
-
-
-#################################
-def _getPicUrl(photo, format):
-    return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg" % (
-        photo['farm'], photo['server'], photo['id'], photo['secret'], format)
-
-def getThumbURL(photo):
-    return _getPicUrl(photo, 's')
-
-def getPhotoURL(photo):
-    return _getPicUrl(photo, 'b')
-
-def getUserURL(nick):
-    return "http://www.flickr.com/photos/%s" % (nick)
-
-def getVideoURL(photo):
-    return "http://www.flickr.com/photos/%s/%s/play/orig/%s/" % (
-        photo['owner'], photo['id'], photo['secret'])
-
-def _selectPhotoSizeURL(sizes, order):
-    for s in order:
-        for size in sizes:
-            if size['label'] == s:
-                return size['source']
-
-def selectSmallerPhotoSizeURL(sizes):
-    return _selectPhotoSizeURL(sizes, SIZES)
-
-def selectBiggerPhotoSizeURL(sizes):
-    return _selectPhotoSizeURL(sizes, INV_SIZES)
-
-def selectMediaURL(sizes, media_type):
-    for size in sizes:
-        if size['media'] == media_type:
-            return size['url']
-
-#################################
 
 def getPhotoInfo(api, token, photo_id):
     rsp_json = json_request(api, token, 'photos.getInfo',
