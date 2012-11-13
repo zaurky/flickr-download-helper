@@ -44,12 +44,12 @@ def getUserFromID(api, user_id, token = None):
 
 def getUserFromUsername(api, user_name):
     rsp_json = json_request(api, None, 'people.findByUsername',
-        "erro while getting user %s from username", [user_name], username=user_name)
+        "user %s from username", [user_name], username=user_name)
     return rsp_json['user'] if rsp_json else None
 
 def searchGroupByUrl(api, token, group_url):
     rsp_json = json_request(api, token, 'urls.lookupGroup',
-        "error while searching for group %s", [group_name], url=group_url, content_type=7)
+        " info for group %s from url", [group_name], url=group_url, content_type=7)
     return rsp_json['group'] if rsp_json else []
 
 def getPhotoExif(api, token, photo_id):
@@ -85,7 +85,7 @@ def getUserPhotosets(api, token, user_id):
 
 def getContactsPhotos(api, token):
     rsp_json = json_request(api, token, 'photos.getContactsPhotos',
-        'error while getting the contacts photos')
+        'the contacts photos')
     return rsp_json['photos']['photo'] if rsp_json else []
 
 def getCollectionPhotosets(api, token, collection_id, user_id):
@@ -125,7 +125,7 @@ def getUserLastPhotos(api, token, user_id, since, page=1):
 
 def getPhotosByTag(api, token, user_id, tags, page=1):
     rsp_json = json_request(api, token, 'photos.search',
-        "error while searching photos",
+        "searched photos",
         user_id=user_id, tags=tags, content_type=7, page=page)
     if not rsp_json: return
 
@@ -139,7 +139,7 @@ def getPhotosByTag(api, token, user_id, tags, page=1):
 
 def getContactList(api, token, page=1):
     rsp_json = json_request(api, token, 'contacts.getList',
-        'error while getting the contact list',
+        'the contact list',
         page=page, sort='time')
     if not (rsp_json and rsp_json.get('contacts')): return []
 
@@ -155,7 +155,7 @@ def getContactList(api, token, page=1):
 
 def getUserFavorites(api, token, user_id, page=1, one_shot=False, per_page=DEFAULT_PERPAGE, min_fave_date=None):
     rsp_json = json_request(api, token, 'favorites.getList',
-        'error while getting %s favorites', [user_id],
+        '%s favorites', [user_id],
         user_id=user_id, page=page, content_type=7, per_page=per_page,
         min_fave_date=min_fave_date)
     if not rsp_json: return []
