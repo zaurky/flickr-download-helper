@@ -17,7 +17,7 @@ from flickr_download_helper.api import getPhotoURLFlickr, getPhotosetInfos, getU
 from flickr_download_helper.api import getUserFromUsername, getUserFromUrl, getUserFromNick, readFile, downloadPhotoFromURL, getPhotosByTag
 from flickr_download_helper.api import backupUser, restoreUser, initialisationFlickrApi
 from flickr_download_helper.api import getPhotoset, getCollectionPhotosets, \
-    getContactsPhotos, searchGroup, getUser
+    getContactsPhotos, searchGroup, getUser, getUserFromAll
 from flickr_download_helper.url_parser import UrlParser
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.utils import extends
@@ -98,7 +98,8 @@ def main(api, token):
             pass
         elif url[0] == FDHPR.TAG:
             OPT.tags = (url[2])
-            OPT.username = OPT.url
+            user = getUserFromAll(api, OPT.url)
+            OPT.user_id = user['id']
             OPT.url = None
         elif url[0] == FDHPR.SET:
             OPT.photoset_id = url[2]
