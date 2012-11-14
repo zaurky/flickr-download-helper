@@ -124,16 +124,28 @@ def getUserLastPhotos(api, token, user_id, since, page=1):
     return content
 
 def getPhotosByTag(api, token, user_id, tags, page=1):
-    rsp_json = json_request(api, token, 'photos.search',
-        "searched photos",
+    rsp_json = json_request(api, token, 'photos.search', "searched photos",
         user_id=user_id, tags=tags, content_type=7, page=page)
-    if not rsp_json: return
+    if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
     total = int(rsp_json['photos']['total'])
 
     if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
         content.extend(getPhotosByTag(api, token, user_id, tags, page+1))
+
+    return content
+
+def searchPhotos(api, token, user_id, search, page=1):
+    rsp_json = json_request(api, token, 'photos.search', "searched photos",
+        user_id=user_id, text=search, content_type=7, page=page)
+    if not rsp_json: return []
+
+    content = rsp_json['photos']['photo']
+    total = int(rsp_json['photos']['total'])
+
+    if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
+        content.extend(searchPhotos(api, token, user_id, search, page+1))
 
     return content
 
