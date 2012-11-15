@@ -27,10 +27,12 @@ def getPhotoInfo(api, token, photo_id):
         "photo info for %s", [photo_id], photo_id=photo_id)
     return rsp_json['photo'] if rsp_json else None
 
+
 def getPhotosetInfos(api, token, photoset_id):
     rsp_json = json_request(api, token, 'photosets.getInfo',
         "photoset %s informations", [photoset_id], photoset_id=photoset_id)
     return rsp_json['photoset'] if rsp_json else None
+
 
 def getCollectionInfo(api, token, collection_id):
     rsp_json = json_request(api, token, 'collections.getInfo',
@@ -38,58 +40,70 @@ def getCollectionInfo(api, token, collection_id):
         collection_id=collection_id)
     return rsp_json['collection'] if rsp_json else None
 
-def getUserFromID(api, user_id, token = None):
+
+def getUserFromID(api, user_id, token=None):
     rsp_json = json_request(api, token, 'people.getInfo',
         "user informations for %s", [user_id], user_id=user_id)
     return rsp_json['person'] if rsp_json else None
+
 
 def getUserFromUsername(api, user_name):
     rsp_json = json_request(api, None, 'people.findByUsername',
         "user %s from username", [user_name], username=user_name)
     return rsp_json['user'] if rsp_json else None
 
+
 def searchGroupByUrl(api, token, group_url):
     rsp_json = json_request(api, token, 'urls.lookupGroup',
-        " info for group %s from url", [group_name], url=group_url,
+        " info for group %s from url", [group_url], url=group_url,
         content_type=7)
     return rsp_json['group'] if rsp_json else []
+
 
 def getPhotoExif(api, token, photo_id):
     rsp_json = json_request(api, token, 'photos.getExif',
         "photo EXIF for %s", [photo_id], photo_id=photo_id)
     return rsp_json['photo']['exif'] if rsp_json else None
 
+
 def getPhotoSize(api, token, photo_id):
     rsp_json = json_request(api, token, 'photos.getSizes',
         "photo size for %s", [photo_id], photo_id=photo_id)
     return rsp_json['sizes']['size'] if rsp_json else None
 
-def getUserGroups(api, token, user_id, page = 1):
+
+def getUserGroups(api, token, user_id, page=1):
     rsp_json = json_request(api, token, 'people.getPublicGroups',
         "user %s groups, page %i", [user_id, page],
         page=page, user_id=user_id, content_type=7, invitation_only=1)
     return rsp_json['groups']['group'] if rsp_json else []
+
 
 def countGroupPhotos(api, token, group_id):
     rsp_json = json_request(api, token, 'groups.pools.getPhotos',
         "photos from group %s", [group_id], per_page=1, group_id=group_id)
     return rsp_json['photos']['total'] if rsp_json else 0
 
+
 def getUserPhotosets(api, token, user_id):
     rsp_json = json_request(api, token, 'photosets.getList',
         "photosets for user %s", [user_id], user_id=user_id)
     return rsp_json['photosets']['photoset'] if rsp_json else None
+
 
 def getContactsLatestPhotos(api, token, page=1):
     rsp_json = json_request(api, token, 'photos.getContactsPhotos',
         'the contacts photos', page=page, count=50)
     return rsp_json['photos']['photo'] if rsp_json else []
 
+
 def getCollectionPhotosets(api, token, collection_id, user_id):
     rsp_json = json_request(api, token, 'collections.getTree',
         "photosets for user (%s) collection %s", [user_id, collection_id],
         collection_id=collection_id, user_id=user_id, content_type=7)
-    return rsp_json['collections']['collection'][0]['set'] if rsp_json else None
+
+    if rsp_json:
+        return rsp_json['collections']['collection'][0]['set']
 
 
 def getPhotosetPhotos(api, token, photoset_id, page=1):
@@ -107,6 +121,7 @@ def getPhotosetPhotos(api, token, photoset_id, page=1):
 
     return content
 
+
 def getUserLastPhotos(api, token, user_id, since, page=1):
     rsp_json = json_request(api, token, 'photos.recentlyUpdated',
         "last %s's photos page %i", [user_id, page],
@@ -118,9 +133,10 @@ def getUserLastPhotos(api, token, user_id, since, page=1):
     total = int(rsp_json['photos']['total'])
 
     if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-        content.extend(getUserLastPhotos(api, token, user_id, since, page+1))
+        content.extend(getUserLastPhotos(api, token, user_id, since, page + 1))
 
     return content
+
 
 def getPhotosByTag(api, token, user_id, tags, page=1):
     rsp_json = json_request(api, token, 'photos.search', "searched photos",
@@ -131,9 +147,10 @@ def getPhotosByTag(api, token, user_id, tags, page=1):
     total = int(rsp_json['photos']['total'])
 
     if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-        content.extend(getPhotosByTag(api, token, user_id, tags, page+1))
+        content.extend(getPhotosByTag(api, token, user_id, tags, page + 1))
 
     return content
+
 
 def searchPhotos(api, token, user_id, search, page=1):
     rsp_json = json_request(api, token, 'photos.search', "searched photos",
@@ -144,9 +161,10 @@ def searchPhotos(api, token, user_id, search, page=1):
     total = int(rsp_json['photos']['total'])
 
     if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-        content.extend(searchPhotos(api, token, user_id, search, page+1))
+        content.extend(searchPhotos(api, token, user_id, search, page + 1))
 
     return content
+
 
 def getContactList(api, token, page=1):
     rsp_json = json_request(api, token, 'contacts.getList',
@@ -160,9 +178,10 @@ def getContactList(api, token, page=1):
     if not content: return []
 
     if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-        content.extend(getContactList(api, token, page+1))
+        content.extend(getContactList(api, token, page + 1))
 
     return content
+
 
 def getUserFavorites(api, token, user_id, page=1, one_shot=False,
         per_page=DEFAULT_PERPAGE, min_fave_date=None):
@@ -205,6 +224,7 @@ def getGroupPhotosFromScratch(api, token, group_id, batch=0, page_in_batch=100,
         if page * per_page > int(rsp_json['photos']['total']): break
 
     return content
+
 
 def groupFromScratch(api, token, group_id):
     rsp_json = json_request(api, token, 'groups.pools.getPhotos',
@@ -308,10 +328,11 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
             per_page = DEFAULT_PERPAGE
 
         INS['temp_groups'][temp_groups_key] = content
-        content = getGroupPhotos(api, token, group_id, page+1, user_id,
+        content = getGroupPhotos(api, token, group_id, page + 1, user_id,
             per_page=per_page)
 
     return content
+
 
 def getUserPhotos(api, token, user_id, min_upload_date=None, page=1,
         limit=None):
@@ -339,9 +360,10 @@ def getUserPhotos(api, token, user_id, min_upload_date=None, page=1,
 
     if len(content) + (page - 1) * per_page != total:
         content.extend(getUserPhotos(api, token, user_id, min_upload_date,
-            page+1))
+            page + 1))
 
     return content
+
 
 def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
     urls = {}
@@ -386,14 +408,17 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
 
     return urls
 
+
 def searchGroup(api, token, group_name):
     return searchGroupByUrl(api, token,
         'http://www.flickr.com/groups/%s' % group_name)
+
 
 def getUserFromUrl(api, url, from_nick=False):
     rsp_json = json_request(api, None, 'urls.lookupUser',
         "lookup for user url %s", [url], url=url)
     return rsp_json['user'] if rsp_json else {}
+
 
 def getUserFromNick(api, nick):
     try:
@@ -401,13 +426,15 @@ def getUserFromNick(api, nick):
     except Exception, e:
         Logger().error("while looking up for user %s (%s)" % (nick, e.message))
 
+
 def getUserFromAll(api, u_string):
     for func in (
                 getUserFromUrl, getUserFromNick,
-                getUserFromUsername, getUserFromID
+                getUserFromUsername, getUserFromID,
             ):
         user = func(api, u_string)
         if user: return user
+
 
 def getUser(api, token):
     Logger().info("\n== get user_id")
@@ -426,16 +453,17 @@ def getUser(api, token):
     else:
         return getUserFromID(api, OPT.user_id)
 
+
 def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
         info=None):
 
     if not check_exists and os.path.exists(filename):
-        Logger().info("%s exists"%info['id'])
+        Logger().info("%s exists" % info['id'])
         return 0
 
     if os.path.exists(filename) and info and existing and \
             not existing.isYounger(info['id'], info['lastupdate']):
-        Logger().info("%s exists"%info['id'])
+        Logger().info("%s exists" % info['id'])
         return 0
 
     content = downloadProtect(url)
@@ -450,9 +478,9 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
             index += 1
             f = re.split('\.', filename)
             if index == 1:
-                f.insert(len(f)-1, str(index))
+                f.insert(len(f) - 1, str(index))
             else:
-                f[len(f)-2] = str(index)
+                f[len(f) - 2] = str(index)
 
             filename = '.'.join(f)
             possible_files.append(filename)
@@ -463,7 +491,7 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
 
     if info:
         try:
-            exif.fillFile(None, None, filename, info = info)
+            exif.fillFile(None, None, filename, info=info)
         except Exception, e:
             Logger().warn("Failed to put exif")
             Logger().warn(e)
@@ -513,7 +541,7 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
             OPT.daily_in_dir,
             '_'.join([
                 os.path.basename(os.path.dirname(filename)),
-                os.path.basename(filename)
+                os.path.basename(filename),
             ]))
 
         if not os.path.exists(link_dest):
@@ -524,10 +552,12 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
 
     return len(content)
 
+
 def backupUser(user_id, photos, backup_dir):
     f = open(os.path.join(backup_dir, user_id), 'wb')
     marshal.dump(photos, f)
     f.close()
+
 
 def restoreUser(user_id, backup_dir):
     filepath = os.path.join(backup_dir, user_id)
@@ -572,7 +602,7 @@ def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name,
                 else:
                     raise
             else:
-                Logger().error("while doing stuffs in %s"%destination)
+                Logger().error("while doing stuffs in %s" % destination)
                 info = sys.exc_info()
                 Logger().error(str(e))
                 Logger().print_tb(info[2])
