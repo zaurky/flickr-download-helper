@@ -56,9 +56,9 @@ def get_video(filename):
     return True
 
 
-def _getPicUrl(photo, format):
+def _getPicUrl(photo, size):
     return "http://farm%s.static.flickr.com/%s/%s_%s_%s.jpg" % (
-        photo['farm'], photo['server'], photo['id'], photo['secret'], format)
+        photo['farm'], photo['server'], photo['id'], photo['secret'], size)
 
 
 def getThumbURL(photo):
