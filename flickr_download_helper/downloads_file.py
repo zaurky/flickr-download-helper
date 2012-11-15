@@ -1,5 +1,6 @@
 from flickr_download_helper.config import OPT, Singleton
 from flickr_download_helper.existing import mkdir_p
+from flickr_download_helper.utils import waitFor
 import os
 
 
@@ -15,8 +16,8 @@ class DownloadFile(Singleton):
                     mkdir_p(dirname)
 
                 self._file = open(filename, 'ab')
-            except OSError, e:
-                if e.errno == 28:
+            except OSError, err:
+                if err.errno == 28:
                     if waitFor("there is not enough space to continue, " \
                             "please delete some files and try again"):
                         self._file = open(filename, 'ab')
