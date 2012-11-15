@@ -1,12 +1,11 @@
 #!/usr/bin/python
 
-from flickr_download_helper.config import OptConfigReader, OPT, OptReader
+from flickr_download_helper.config import OptConfigReader, OPT
 import pickle
 import shutil
-import os, errno
+import os
 
 import md5
-import sys
 
 config = OptConfigReader()
 config.setup()
