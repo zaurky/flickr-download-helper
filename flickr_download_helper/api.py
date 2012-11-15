@@ -34,7 +34,8 @@ def getPhotosetInfos(api, token, photoset_id):
 
 def getCollectionInfo(api, token, collection_id):
     rsp_json = json_request(api, token, 'collections.getInfo',
-        "informations for collection %s", [collection_id], collection_id=collection_id)
+        "informations for collection %s", [collection_id],
+        collection_id=collection_id)
     return rsp_json['collection'] if rsp_json else None
 
 def getUserFromID(api, user_id, token = None):
@@ -49,7 +50,8 @@ def getUserFromUsername(api, user_name):
 
 def searchGroupByUrl(api, token, group_url):
     rsp_json = json_request(api, token, 'urls.lookupGroup',
-        " info for group %s from url", [group_name], url=group_url, content_type=7)
+        " info for group %s from url", [group_name], url=group_url,
+        content_type=7)
     return rsp_json['group'] if rsp_json else []
 
 def getPhotoExif(api, token, photo_id):
@@ -93,7 +95,8 @@ def getCollectionPhotosets(api, token, collection_id, user_id):
 def getPhotosetPhotos(api, token, photoset_id, page=1):
     rsp_json = json_request(api, token, 'photosets.getPhotos',
         "photos from %s photoset, page %i", [photoset_id, page],
-        page=page, per_page=DEFAULT_PERPAGE, photoset_id=photoset_id, content_type=7)
+        page=page, per_page=DEFAULT_PERPAGE, photoset_id=photoset_id,
+        content_type=7)
     if not rsp_json: return []
 
     content = rsp_json['photoset']['photo']
@@ -107,7 +110,8 @@ def getPhotosetPhotos(api, token, photoset_id, page=1):
 def getUserLastPhotos(api, token, user_id, since, page=1):
     rsp_json = json_request(api, token, 'photos.recentlyUpdated',
         "last %s's photos page %i", [user_id, page],
-        page=page, per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7, min_date=since)
+        page=page, per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7,
+        min_date=since)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
@@ -160,7 +164,8 @@ def getContactList(api, token, page=1):
 
     return content
 
-def getUserFavorites(api, token, user_id, page=1, one_shot=False, per_page=DEFAULT_PERPAGE, min_fave_date=None):
+def getUserFavorites(api, token, user_id, page=1, one_shot=False,
+        per_page=DEFAULT_PERPAGE, min_fave_date=None):
     rsp_json = json_request(api, token, 'favorites.getList',
         '%s favorites', [user_id],
         user_id=user_id, page=page, content_type=7, per_page=per_page,
@@ -182,7 +187,8 @@ def getUserFavorites(api, token, user_id, page=1, one_shot=False, per_page=DEFAU
     return content
 
 
-def getGroupPhotosFromScratch(api, token, group_id, batch=0, page_in_batch=100, per_page=500):
+def getGroupPhotosFromScratch(api, token, group_id, batch=0, page_in_batch=100,
+        per_page=500):
     Logger().info("getGroupPhotosFromScratch %s %s" % (group_id, batch))
 
     content = []
@@ -243,14 +249,16 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
                 return l_photos
 
     if not per_page:
-        if not user_id and INS.get('put_group_in_session') and not OPT.group_from_cache:
+        if not user_id and INS.get('put_group_in_session') and \
+                not OPT.group_from_cache:
             per_page = DEFAULT_PERPAGE
         else:
             per_page = 500
 
     rsp_json = json_request(api, token, 'groups.pools.getPhotos',
         "photos from group %s for user %s, page %i", [group_id, user_id, page],
-        page=page, per_page=per_page, group_id=group_id, user_id=user_id, content_type=7)
+        page=page, per_page=per_page, group_id=group_id, user_id=user_id,
+        content_type=7)
     if not rsp_json: return []
 
     content = rsp_json['photos']['photo']
@@ -286,7 +294,8 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
     # remove duplicates on id
     l_photos = dict(map(lambda x: (x['id'], x), l_photos)).values()
 
-    Logger().debug("getGroupPhotos %d %d %d" % (len(l_photos), g_size, len(content)))
+    Logger().debug("getGroupPhotos %d %d %d" % (
+        len(l_photos), g_size, len(content)))
 
     if len(l_photos) >= g_size or len(content) == 0:
         return _cache_group(group_id, l_photos)
@@ -299,11 +308,13 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
             per_page = DEFAULT_PERPAGE
 
         INS['temp_groups'][temp_groups_key] = content
-        content = getGroupPhotos(api, token, group_id, page+1, user_id, per_page=per_page)
+        content = getGroupPhotos(api, token, group_id, page+1, user_id,
+            per_page=per_page)
 
     return content
 
-def getUserPhotos(api, token, user_id, min_upload_date=None, page=1, limit=None):
+def getUserPhotos(api, token, user_id, min_upload_date=None, page=1,
+        limit=None):
     per_page = DEFAULT_PERPAGE if not limit else limit
 
     kargs = {
@@ -327,7 +338,8 @@ def getUserPhotos(api, token, user_id, min_upload_date=None, page=1, limit=None)
         return content
 
     if len(content) + (page - 1) * per_page != total:
-        content.extend(getUserPhotos(api, token, user_id, min_upload_date, page+1))
+        content.extend(getUserPhotos(api, token, user_id, min_upload_date,
+            page+1))
 
     return content
 
@@ -349,8 +361,8 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
             else:
                 sizes = getPhotoSize(api, token, photo['id'])
                 if not sizes:
-                    Logger().error("can't get photo size for %s " \
-                        "(the photo is not going to be retrieve)" % photo['id'])
+                    Logger().error("can't get photo size for %s (the photo " \
+                        "is not going to be retrieve)" % photo['id'])
                     continue
 
                 if thumb:
@@ -359,11 +371,14 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
                     if photo.get('media', 'photo') != 'photo':
                         url = selectMediaURL(sizes, photo['media'])
                         Logger().info("Get the video %s" % (url))
-                        DownloadFile().write("%s video %s" % (str(datetime.now()), url))
+                        DownloadFile().write("%s video %s" % (
+                            str(datetime.now()), url))
                     elif 'video' in photo:
-                        Logger().info("Get the video %s" % (photo['urls']['url'][0]))
+                        Logger().info("Get the video %s" % (
+                            photo['urls']['url'][0]))
                         url = selectBiggerPhotoSizeURL(sizes)
-                        DownloadFile().write("%s video %s" % (str(datetime.now()), url))
+                        DownloadFile().write("%s video %s" % (
+                            str(datetime.now()), url))
                     else:
                         url = selectBiggerPhotoSizeURL(sizes)
 
@@ -372,7 +387,8 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
     return urls
 
 def searchGroup(api, token, group_name):
-    return searchGroupByUrl(api, token, 'http://www.flickr.com/groups/%s' % group_name)
+    return searchGroupByUrl(api, token,
+        'http://www.flickr.com/groups/%s' % group_name)
 
 def getUserFromUrl(api, url, from_nick=False):
     rsp_json = json_request(api, None, 'urls.lookupUser',
@@ -387,7 +403,9 @@ def getUserFromNick(api, nick):
 
 def getUserFromAll(api, u_string):
     for func in (
-            getUserFromUrl, getUserFromNick, getUserFromUsername, getUserFromID):
+                getUserFromUrl, getUserFromNick,
+                getUserFromUsername, getUserFromID
+            ):
         user = func(api, u_string)
         if user: return user
 
@@ -408,12 +426,15 @@ def getUser(api, token):
     else:
         return getUserFromID(api, OPT.user_id)
 
-def downloadPhotoFromURL(url, filename, existing=None, check_exists=False, info=None):
+def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
+        info=None):
+
     if not check_exists and os.path.exists(filename):
         Logger().info("%s exists"%info['id'])
         return 0
 
-    if os.path.exists(filename) and info and existing and not existing.isYounger(info['id'], info['lastupdate']):
+    if os.path.exists(filename) and info and existing and \
+            not existing.isYounger(info['id'], info['lastupdate']):
         Logger().info("%s exists"%info['id'])
         return 0
 
@@ -525,7 +546,8 @@ def _mkdir_photoset(destination, retrieve):
     mkdir(destination)
 
 
-def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name, user_id, existing=None):
+def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name,
+            user_id, existing=None):
         photo_id2destination = {}
         if not existing:
             existing = Existing(user_id, user_name)
