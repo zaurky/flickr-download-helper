@@ -3,7 +3,8 @@
 #import markup
 import cgi
 
-from flickr_download_helper.api import getUserFromAll, initialisationFlickrApi, getUserPhotos, getPhotoURLFlickr, searchPhotos, getContactPhotos
+from flickr_download_helper.api import (getUserFromAll, initialisationFlickrApi,
+    getUserPhotos, getPhotoURLFlickr, searchPhotos, getContactsLatestPhotos)
 from flickr_download_helper.config import OptConfigReader, OPT
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.existing import Existing
@@ -48,7 +49,7 @@ else:
 
 #     params = {"contacts":"ff", "min_upload_date":"1287399869", "extra":"url_sq"}
 #     photos = searchPhotos(api, token, params)
-    photos = getContactPhotos(api, token)
+    photos = getContactsLatestPhotos(api, token)
     p = {}
     for photo in photos:
         p[photo['id']] = photo['owner']

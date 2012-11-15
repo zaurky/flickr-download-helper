@@ -73,19 +73,14 @@ def countGroupPhotos(api, token, group_id):
         "photos from group %s", [group_id], per_page=1, group_id=group_id)
     return rsp_json['photos']['total'] if rsp_json else 0
 
-def getContactPhotos(api, token, page = 1):
-    rsp_json = json_request(api, token, 'photos.getContactsPhotos',
-        "contact photos", page=page, count=50)
-    return rsp_json['photos']['photo'] if rsp_json else None
-
 def getUserPhotosets(api, token, user_id):
     rsp_json = json_request(api, token, 'photosets.getList',
         "photosets for user %s", [user_id], user_id=user_id)
     return rsp_json['photosets']['photoset'] if rsp_json else None
 
-def getContactsPhotos(api, token):
+def getContactsLatestPhotos(api, token, page=1):
     rsp_json = json_request(api, token, 'photos.getContactsPhotos',
-        'the contacts photos')
+        'the contacts photos', page=page, count=50)
     return rsp_json['photos']['photo'] if rsp_json else []
 
 def getCollectionPhotosets(api, token, collection_id, user_id):

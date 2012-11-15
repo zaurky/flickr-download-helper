@@ -17,7 +17,7 @@ from flickr_download_helper.api import getPhotoURLFlickr, getPhotosetInfos, getU
 from flickr_download_helper.api import getUserFromUsername, getUserFromUrl, getUserFromNick, readFile, downloadPhotoFromURL, getPhotosByTag
 from flickr_download_helper.api import backupUser, restoreUser, initialisationFlickrApi
 from flickr_download_helper.api import getPhotoset, getCollectionPhotosets, \
-    getContactsPhotos, searchGroup, getUser, getUserFromAll
+    getContactsLatestPhotos, searchGroup, getUser, getUserFromAll
 from flickr_download_helper.url_parser import UrlParser
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.utils import extends
@@ -495,5 +495,5 @@ def main(api, token):
 def getRecentlyUploadedContacts(api, token):
     return list(set(map(lambda photo:
         photo['owner'],
-        getContactsPhotos(api, token)
+        getContactsLatestPhotos(api, token)
     )))
