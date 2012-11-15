@@ -1,10 +1,12 @@
-from flickr_download_helper.logger import Logger
-from flickr_download_helper.utils import readFile
-import Flickr.API
-import xml.etree.ElementTree
 import simplejson
 import urllib2
+import sys
+import xml.etree.ElementTree
 
+import Flickr.API
+
+from flickr_download_helper.logger import Logger
+from flickr_download_helper.utils import readFile
 
 def saveToken(token, token_file):
     # put the token in the configuration directory
