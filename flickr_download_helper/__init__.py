@@ -25,32 +25,8 @@ from flickr_download_helper.downloads_file import DownloadFile
 
 
 def main_init(read_command_line=True):
-    config = OptConfigReader()
-    config.setup()
-
-    if read_command_line:
-        opt = OptReader()
-        ret = opt.read()
-        if ret: return ret
-
-    Logger().setup()
-    Logger().warn("##########################################################")
-    Logger().warn("%s (running as %s)" % (" ".join(sys.argv), os.getpid()))
-    Logger().debug("LANG is %s" % os.environ.get('LANG'))
-
-    proxy = FDHProxySettings()
-    proxy.setValues(OPT)
-    proxy.activate()
-
-    # init of the flickr api
-    r = initialisationFlickrApi(OPT)
-    if not isinstance(r, (list, tuple)) or len(r) != 2:
-        if r != 6:
-            Logger().error("Couldn't init flickr api")
-            Logger().error(r)
-
-        raise Exception("Couldn't init flickr api %s" % (r,))
-    return r
+    api = API(read_command_line)
+    return (api.api, api.token)
 
 
 def filter_photos(user_id, user_name, photos, existing=None):
