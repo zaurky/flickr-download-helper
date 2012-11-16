@@ -1,8 +1,11 @@
+from flickr_download_helper.config import OPT
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.logger import Logger
 
+from flickr_download_helper.api import getUserFromAll, searchGroup
 
-class UrlParser:
+
+class UrlParser(object):
 
     def  __init__(self, url=None):
         self.url = url
@@ -71,3 +74,40 @@ class UrlParser:
                 return (FDHPR.INGROUP, extra2, param)
 
         return (FDHPR.ERROR)
+
+    def fill_opt(self, api, token):
+        Logger().info("\n== retrieve from URL")
+        url = self.parse()
+
+        if '@' in url[1]:
+            OPT.user_id = url[1]
+        else:
+            OPT.url = url[1]
+
+        if url[0] == FDHPR.USER:
+            pass
+        elif url[0] == FDHPR.TAG:
+            OPT.tags = (url[2])
+            user = getUserFromAll(api, OPT.url)
+            OPT.user_id = user['id']
+            OPT.url = None
+        elif url[0] == FDHPR.SET:
+            OPT.photoset_id = url[2]
+        elif url[0] == FDHPR.COLLECTION:
+            OPT.collection_id = url[2]
+        elif url[0] == FDHPR.PHOTO:
+            OPT.url = OPT.user_id = None
+            OPT.photo_ids = (url[1])
+        elif url[0] == FDHPR.PROFILE:
+            OPT.url = OPT.user_id = None
+            Logger().warn("I don't know what to do with that! %s" % (OPT.get_url))
+        elif url[0] == FDHPR.PHOTOSETS:
+            OPT.sort_by_photoset = True
+        elif url[0] == FDHPR.GROUP:
+            Logger().error("Don't know how to get group")
+        elif url[0] == FDHPR.INGROUP:
+            group = searchGroup(api, token, url[2])
+            OPT.group_id = group['id']
+        elif url[0] in (FDHPR.ERROR, FDHPR.ERROR_NOURL, FDHPR.ERROR_NOTFLICKR):
+            OPT.url = OPT.user_id = None
+            Logger().error("error parsing OPT.get_url : %s" % (url[0]))

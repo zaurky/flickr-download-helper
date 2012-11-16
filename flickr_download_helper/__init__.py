@@ -128,41 +128,7 @@ def main(api, token):
             os.mkdir(OPT.daily_in_dir)
 
     if OPT.get_url:
-        Logger().info("\n== retrieve from URL")
-        url = UrlParser(OPT.get_url).parse()
-
-        if '@' in url[1]:
-            OPT.user_id = url[1]
-        else:
-            OPT.url = url[1]
-
-        if url[0] == FDHPR.USER:
-            pass
-        elif url[0] == FDHPR.TAG:
-            OPT.tags = (url[2])
-            user = getUserFromAll(api, OPT.url)
-            OPT.user_id = user['id']
-            OPT.url = None
-        elif url[0] == FDHPR.SET:
-            OPT.photoset_id = url[2]
-        elif url[0] == FDHPR.COLLECTION:
-            OPT.collection_id = url[2]
-        elif url[0] == FDHPR.PHOTO:
-            OPT.url = OPT.user_id = None
-            OPT.photo_ids = (url[1])
-        elif url[0] == FDHPR.PROFILE:
-            OPT.url = OPT.user_id = None
-            Logger().warn("I don't know what to do with that! %s" % (OPT.get_url))
-        elif url[0] == FDHPR.PHOTOSETS:
-            OPT.sort_by_photoset = True
-        elif url[0] == FDHPR.GROUP:
-            Logger().error("Don't know how to get group")
-        elif url[0] == FDHPR.INGROUP:
-            group = searchGroup(api, token, url[2])
-            OPT.group_id = group['id']
-        elif url[0] in (FDHPR.ERROR, FDHPR.ERROR_NOURL, FDHPR.ERROR_NOTFLICKR):
-            OPT.url = OPT.user_id = None
-            Logger().error("error parsing OPT.get_url : %s" % (url[0]))
+        UrlParser(OPT.get_url).fill_opt(api, token)
 
     if OPT.photo_id_in_file:
         # work on a list of photos ids
@@ -190,7 +156,8 @@ def main(api, token):
         existing = Existing(user_id, user_name)
 
         urls, photo_id2destination, destination, infos = getPhotoset(
-            OPT, api, token, user_name, OPT.photoset_id, photoset_name, user_id, existing)
+            OPT, api, token, user_name, OPT.photoset_id, photoset_name,
+            user_id, existing)
 
     elif OPT.photo_ids:
         Logger().info("\n== retrieve photos informations")
