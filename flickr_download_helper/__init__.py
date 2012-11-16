@@ -329,6 +329,13 @@ def main(api, token):
                 if OPT.retrieve and not os.path.exists(destination):
                     os.mkdir(destination)
 
+        elif OPT.search:
+            photos = searchPhotos(api, token, user_id, OPT.search)
+            existing, photos, infos = filter_photos(
+                user_id, user_name, photos, existing)
+            urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+            user_name, destination = create_dir_env(user_name)
+
         else:
             # getting the file's URL
             if OPT.restore_photo_url:
