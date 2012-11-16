@@ -90,7 +90,7 @@ class API(object):
         return rsp_json['person'] if rsp_json else None
 
     def getUserFromUsername(self, user_name):
-        rsp_json = json_request(api, None, 'people.findByUsername',
+        rsp_json = self._json_request('people.findByUsername',
             "user %s from username", [user_name], username=user_name,
             sign=False)
         return rsp_json['user'] if rsp_json else None
@@ -140,76 +140,79 @@ class API(object):
         if rsp_json:
             return rsp_json['collections']['collection'][0]['set']
 
-    def getPhotosetPhotos(self, photoset_id, page=1):
+    def _loop(self, func, path, *attr, **kargs):
+        ret = []
+        path.reverse()
+        page = kargs.pop('page', 1)
+
+        while page < 500:
+            kargs['page'] = page
+            rsp_json = func(*attr, **kargs)
+            if not rsp_json:
+                break
+
+            l_path = list(path)
+            while l_path:
+                rsp_json = rsp_json.get(l_path.pop(), {})
+
+            if not rsp_json:
+                break
+
+            ret.extend(rsp_json)
+            page += 1
+
+        return ret
+
+    def _getPhotosetPhotos(self, photoset_id, page):
         rsp_json = self._json_request('photosets.getPhotos',
             "photos from %s photoset, page %i", [photoset_id, page],
             page=page, per_page=DEFAULT_PERPAGE, photoset_id=photoset_id,
             content_type=7)
-        if not rsp_json: return []
+        return rsp_json or []
 
-        content = rsp_json['photoset']['photo']
-        total = int(rsp_json['photoset']['total'])
+    def getPhotosetPhotos(self, photoset_id, page=1):
+        return self._loop(self._getPhotosetPhotos,
+            ['photoset', 'photo'], photoset_id, page=page)
 
-        if int(len(content) + (page - 1) * DEFAULT_PERPAGE) != total:
-            content.extend(self.getPhotosetPhotos(photoset_id, page + 1))
-
-        return content
+    def _getUserLastPhotos(self, user_id, since, page):
+        rsp_json = self._json_request('photos.recentlyUpdated',
+            "last %s's photos page %i", [user_id, page], page=page,
+            per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7,
+            min_date=since)
+        return rsp_json or []
 
     def getUserLastPhotos(self, user_id, since, page=1):
-        rsp_json = self._json_request('photos.recentlyUpdated',
-            "last %s's photos page %i", [user_id, page],
-            page=page, per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7,
-            min_date=since)
-        if not rsp_json: return []
+        return self._loop(self._getUserLastPhotos,
+            ['photos', 'photo'], user_id, since, page=page)
 
-        content = rsp_json['photos']['photo']
-        total = int(rsp_json['photos']['total'])
-
-        if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-            content.extend(self.getUserLastPhotos(user_id, since, page + 1))
-
-        return content
-
-    def getPhotosByTag(self, user_id, tags, page=1):
+    def _getPhotosByTag(self, user_id, tags, page):
         rsp_json = self._json_request('photos.search', "searched photos",
             user_id=user_id, tags=tags, content_type=7, page=page)
-        if not rsp_json: return []
+        return rsp_json or []
 
-        content = rsp_json['photos']['photo']
-        total = int(rsp_json['photos']['total'])
+    def getPhotosByTag(self, user_id, tags, page=1):
+        return self._loop(self._getPhotosByTag,
+            ['photos', 'photo'], user_id, tags, page=page)
 
-        if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-            content.extend(self.getPhotosByTag(user_id, tags, page + 1))
-
-        return content
-
-    def searchPhotos(self, user_id, search, page=1):
+    def _searchPhotos(self, user_id, search, page):
         rsp_json = self._json_request('photos.search', "searched photos",
             user_id=user_id, text=search, content_type=7, page=page)
-        if not rsp_json: return []
+        return rsp_json or []
 
-        content = rsp_json['photos']['photo']
-        total = int(rsp_json['photos']['total'])
+    def searchPhotos(self, user_id, search, page=1):
+        return self._loop(self._searchPhotos,
+            ['photos', 'photo'], user_id, search, page=page)
 
-        if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-            content.extend(self.searchPhotos(user_id, search, page + 1))
-
-        return content
-
-    def getContactList(self, page=1):
+    def _getContactList(self, page):
         rsp_json = self._json_request('contacts.getList',
             'the contact list', page=page, sort='time')
-        if not (rsp_json and rsp_json.get('contacts')): return []
+        return rsp_json or []
 
-        content = rsp_json['contacts'].get('contact')
-        total = int(rsp_json['contacts']['total'])
+    def getContactList(self, page=1):
+        return self._loop(self._getContactList,
+            ['contacts', 'contact'], page=page)
 
-        if not content: return []
-
-        if len(content) + (page - 1) * DEFAULT_PERPAGE != total:
-            content.extend(self.getContactList(page + 1))
-
-        return content
+    ####
 
     def getUserFavorites(self, user_id, page=1, one_shot=False,
             per_page=DEFAULT_PERPAGE, min_fave_date=None):
