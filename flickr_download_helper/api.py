@@ -68,6 +68,7 @@ class API(object):
         else:
             return json_request(self.api, None, *attr, **kargs)
 
+    # simple methods
     def getPhotoInfo(self, photo_id):
         rsp_json = self._json_request('photos.getInfo',
             "photo info for %s", [photo_id], photo_id=photo_id)
@@ -140,6 +141,7 @@ class API(object):
         if rsp_json:
             return rsp_json['collections']['collection'][0]['set']
 
+    # loop methods
     def _loop(self, func, path, *attr, **kargs):
         ret = []
         path.reverse()
@@ -212,30 +214,17 @@ class API(object):
         return self._loop(self._getContactList,
             ['contacts', 'contact'], page=page)
 
-    ####
-
-    def getUserFavorites(self, user_id, page=1, one_shot=False,
-            per_page=DEFAULT_PERPAGE, min_fave_date=None):
-
+    def _getUserFavorites(self, user_id, min_fave_date, page):
         rsp_json = self._json_request('favorites.getList', '%s favorites',
             [user_id], user_id=user_id, page=page, content_type=7,
-            per_page=per_page, min_fave_date=min_fave_date)
-        if not rsp_json: return []
+            min_fave_date=min_fave_date)
+        return rsp_json or []
 
-        content = rsp_json['photos']['photo']
-        total = int(rsp_json['photos']['total'])
+    def getUserFavorites(self, user_id, min_fave_date=None, page=1):
+        return self._loop(self._getUserFavorites,
+            ['photos', 'photo'], user_id, min_fave_date, page=page)
 
-        if not one_shot:
-            while len(content) < total:
-                if len(content) < total - per_page:
-                    page += 1
-                    content.extend(self.getUserFavorites(
-                        user_id, page, min_fave_date=min_fave_date, one_shot=True))
-                else:
-                    break
-
-        return content
-
+    # complicated stuff
     def getGroupPhotosFromScratch(self, group_id, batch=0, page_in_batch=100,
             per_page=500):
         Logger().info("getGroupPhotosFromScratch %s %s" % (group_id, batch))
@@ -365,9 +354,9 @@ def getGroupPhotosFromScratch(api, token, group_id, batch=0, page_in_batch=100,
 
 def groupFromScratch(api, token, group_id):
     return API().groupFromScratch(group_id)
-   ###
 
 
+### TODO integrate that in API class
 def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
     if not user_id and INS.get('put_group_in_session'):
         group_data = INS['groups'].get(group_id)
