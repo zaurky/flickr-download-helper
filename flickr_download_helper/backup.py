@@ -1,27 +1,29 @@
 from flickr_download_helper.config import Singleton, OPT
-from flickr_download_helper.api import getContactList, getUserFavorites, initialisationFlickrApi
+from flickr_download_helper.api import (getContactList, getUserFavorites,
+    initialisationFlickrApi)
 import pickle
 import shutil
 import time
 import os
 
 
-class GenericBackup:
+class GenericBackup(object):
+
     def backupToFile(self, filename, obj):
         if os.path.exists(filename):
             shutil.move(filename, "%s.bkp" % (filename))
 
-        f = open(filename, 'wb')
-        pickle.dump(obj, f)
-        f.close()
+        fhandle = open(filename, 'wb')
+        pickle.dump(obj, fhandle)
+        fhandle.close()
 
     def loadBackup(self, filename):
         if not os.path.exists(filename):
             return None
 
-        f = open(filename)
-        obj = pickle.load(f)
-        f.close()
+        fhandle = open(filename)
+        obj = pickle.load(fhandle)
+        fhandle.close()
 
         return obj
 
@@ -34,6 +36,7 @@ class PhotosBackup(GenericBackup, Singleton):
     }
     """
     photos = {}
+    filename = None
 
     def refreshPhotos(self):
         pass
@@ -58,7 +61,7 @@ class FavoritesBackup(GenericBackup, Singleton):
     # refresh the list only once per hour
     refresh_time = 3600
 
-    def refreshFavorites(self,):
+    def refreshFavorites(self):
         self.time = time.time()
 
         # load the list
@@ -73,7 +76,8 @@ class FavoritesBackup(GenericBackup, Singleton):
             else:
                 self.favorites[user_id] = [self.time, []]
 
-            photos = getUserFavorites(self.api, self.token, user_id, min_fave_date=min_fave_date)
+            photos = getUserFavorites(self.api, self.token, user_id,
+                min_fave_date=min_fave_date)
             self.favorites[user_id][0] = self.time
 
             h_photos = {}
@@ -83,8 +87,8 @@ class FavoritesBackup(GenericBackup, Singleton):
 
             h_photos_keys = h_photos.keys()
             h_photos_keys.sort()
-            for k in h_photos_keys:
-                self.favorites[user_id][1].append(h_photos[k])
+            for key in h_photos_keys:
+                self.favorites[user_id][1].append(h_photos[key])
 
         # BACKUP FAVORITES
         self.backupToFile(self.filename, [self.time, self.favorites])
