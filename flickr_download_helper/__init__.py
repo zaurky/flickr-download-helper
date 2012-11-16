@@ -12,24 +12,17 @@ import sys
 import os
 import re
 import time
-from flickr_download_helper.api import getPhotoInfo, getUserPhotos, getUserGroups
-from flickr_download_helper.api import getPhotoURLFlickr, getPhotosetInfos, getUserFromID, getUserPhotosets, getGroupPhotos
-from flickr_download_helper.api import getUserFromUsername, getUserFromUrl, getUserFromNick, readFile, downloadPhotoFromURL, getPhotosByTag
-from flickr_download_helper.api import backupUser, restoreUser, initialisationFlickrApi
-from flickr_download_helper.api import getPhotoset, getCollectionPhotosets, \
-    getContactsLatestPhotos, searchGroup, getUser, getUserFromAll
+from datetime import datetime
+
+from flickr_download_helper.api import *
 from flickr_download_helper.url_parser import UrlParser
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.utils import extends
 from flickr_download_helper.config import OptReader, OPT, OptConfigReader, INS
 from flickr_download_helper.proxy import FDHProxySettings
-from flickr_download_helper.existing import Existing
-from flickr_download_helper.existing import file_load, file_dump
+from flickr_download_helper.existing import Existing, file_load, file_dump
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
-import datetime
-from datetime import date
-import simplejson as json
 
 
 def main_init(read_command_line=True):
@@ -42,8 +35,8 @@ def main_init(read_command_line=True):
         if ret: return ret
 
     Logger().setup()
-    Logger().warn("####################################################################")
-    Logger().warn("%s (running as %s)"%(" ".join(sys.argv), os.getpid()))
+    Logger().warn("##########################################################")
+    Logger().warn("%s (running as %s)" % (" ".join(sys.argv), os.getpid()))
     Logger().debug("LANG is %s" % os.environ.get('LANG'))
 
     proxy = FDHProxySettings()
@@ -56,8 +49,58 @@ def main_init(read_command_line=True):
         if r != 6:
             Logger().error("Couldn't init flickr api")
             Logger().error(r)
+
         raise Exception("Couldn't init flickr api %s" % (str(r)))
     return r
+
+
+def filter_photos(user_id, user_name, photos, existing=None):
+    if not photos:
+        return existing, photos, {}
+
+    total = len(photos)
+    # user_id ok
+    if not existing:
+        existing = Existing(user_id, user_name)
+
+    if photos:
+        photos = existing.grepPhotosDontExists(photos)
+
+    diff = total - len(photos)
+    if diff:
+        Logger().info("filter %d photos" % (diff))
+
+    infos = {}
+    for photo in photos:
+        infos[photo['id']] = photo
+
+    return (existing, photos, infos)
+
+
+def create_dir_env(user_name):
+    # prepare the photo directory
+    Logger().info("\n== prepare the photo directory")
+
+    user_name = user_name.replace("/", "##")
+    destination = os.path.join(OPT.photo_dir, user_name)
+
+    try:
+        Logger().debug('look if %s exists, else create it' % destination)
+        if OPT.retrieve and not os.path.exists(destination):
+            os.mkdir(destination)
+    except OSError, e:
+        Logger().error("%s: %s (%s)" % (e.errno, e.filename, e.strerror))
+        raise
+    except UnicodeEncodeError, e:
+        Logger().error(str(e))
+        Logger().error(e.message)
+        raise
+    except Exception, e:
+        Logger().error(str(e))
+        Logger().print_tb(e)
+        raise
+
+    return (user_name, destination)
 
 
 def main(api, token):
@@ -128,6 +171,7 @@ def main(api, token):
         content = content.split("\n")
         while '' in content:
             content.remove('')
+
         OPT.photo_ids = content
 
     if OPT.photoset_id:
@@ -179,14 +223,8 @@ def main(api, token):
         if OPT.sort_by_user:
             for photo_id in photo_id2username:
                 user_name = photo_id2username[photo_id]
-                if re.search("/", user_name):
-                    user_name = user_name.replace("/", "##")
-
-                destination = os.path.join(OPT.photo_dir, user_name)
+                destination = create_dir_env(user_name)
                 photo_id2destination[photo_id] = destination
-
-                if OPT.retrieve and not os.path.exists(destination):
-                    os.mkdir(destination)
 
         Logger().info("\n== get all photos url")
         urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
@@ -273,9 +311,7 @@ def main(api, token):
                         OPT.scan_groups['groups'] = groups
 
             photos = []
-            index = 0
-
-            for group in groups[0:750]:
+            for index, group in enumerate(groups[0:750]):
                 group_id = group['nsid']
 
                 Logger().info("\n== getting group %s (%s) [%s/%s]" % (
@@ -302,61 +338,25 @@ def main(api, token):
                 if count:
                     Logger().debug("got %i photos in group %s" % (count, group_id))
 
-                index += 1
-
-            total = len(photos)
-            # user_id ok
-            if OPT.scan_groups and len(photos):
-                existing = Existing(user_id, user_name)
-
-            if len(photos):
-                photos = existing.grepPhotosDontExists(photos)
-
-            diff = total - len(photos)
-            if diff:
-                Logger().info("filter %d photos" % (diff))
-
-            for photo in photos:
-                infos[photo['id']] = photo
-
+            existing, photos, infos = filter_photos(
+                user_id, user_name, photos, existing)
             urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
-
-            user_name = user_name.replace("/", "##")
-
-            destination = os.path.join(OPT.photo_dir, user_name)
-            try:
-                if OPT.retrieve and not os.path.exists(destination):
-                    os.mkdir(destination)
-            except:
-                Logger().warn(destination)
-                raise
+            user_name, destination = create_dir_env(user_name)
 
         elif OPT.tags or OPT.group_id:
             if OPT.tags:
                 Logger().info("\n== getting photos in tag %s" % OPT.tags)
                 photos = getPhotosByTag(api, token, user_id, OPT.tags)
             else:
-                Logger().info("\n== getting user %s files in group %s" % (user_name, OPT.group_id))
+                Logger().info("\n== getting user %s files in group %s" % (
+                    user_name, OPT.group_id))
                 photos = getGroupPhotos(
                     api, token, OPT.group_id, user_id=user_id, per_page=500)
 
-            total = len(photos)
-            # user_id ok
-            existing = Existing(user_id, user_name)
-            photos = existing.grepPhotosDontExists(photos)
-
-            diff = total - len(photos)
-            if diff:
-                Logger().info("filter %d photos" % (diff))
-
-            for photo in photos:
-                infos[photo['id']] = photo
-
+            existing, photos, infos = filter_photos(
+                user_id, user_name, photos, existing)
             urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
-            destination = os.path.join(OPT.photo_dir, user_name)
-
-            if OPT.retrieve and not os.path.exists(destination):
-                os.mkdir(destination)
+            user_name, destination = create_dir_env(user_name)
 
             if OPT.tags:
                 destination = os.path.join(destination, OPT.tags)
@@ -364,28 +364,6 @@ def main(api, token):
                     os.mkdir(destination)
 
         else:
-            # prepare the photo directory
-            Logger().info("\n== prepare the photo directory")
-            user_name = user_name.replace("/", "##")
-
-            destination = os.path.join(OPT.photo_dir, user_name)
-
-            try:
-                Logger().debug('look if %s exists, else create it' % destination)
-                if OPT.retrieve and not os.path.exists(destination):
-                    os.mkdir(destination)
-            except OSError, e:
-                Logger().error("%s: %s (%s)" % (e.errno, e.filename, e.strerror))
-                raise
-            except UnicodeEncodeError, e:
-                Logger().error(str(e))
-                Logger().error(e.message)
-                raise
-            except Exception, e:
-                Logger().error(str(e))
-                Logger().print_tb(e)
-                raise
-
             # getting the file's URL
             if OPT.restore_photo_url:
                 Logger().info("\n== get the files'URL from a backup file")
@@ -401,19 +379,10 @@ def main(api, token):
                 else:
                     photos = getUserPhotos(api, token, user_id)
 
-                total = len(photos)
-                # user_id ok
-                photos = existing.grepPhotosDontExists(photos)
-
-                diff = total - len(photos)
-                if diff:
-                    Logger().info("filter %d photos" % (diff))
-
-                if not len(infos):
-                    for photo in photos:
-                        infos[photo['id']] = photo
-
+                existing, photos, infos = filter_photos(
+                    user_id, user_name, photos, existing)
                 urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+                user_name, destination = create_dir_env(user_name)
 
                 # backuping what we are going to get
                 Logger().info("\n== backup user's photo information")
@@ -482,7 +451,7 @@ def main(api, token):
 
             Logger().warn("download %i file for %i octets" % (total, total_size))
             DownloadFile().write("%s %s %s" % (
-                str(datetime.datetime.now()), total, user_name))
+                str(datetime.now()), total, user_name))
 
     if existing and len(urls):
         # we only save photo cache when something has been downloaded
