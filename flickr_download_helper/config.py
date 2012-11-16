@@ -6,6 +6,7 @@ import copy
 
 from ConfigParser import ConfigParser
 
+
 class Singleton(object):
     """
     Duplicate from the Singleton() class from the MMC Project,
@@ -17,25 +18,46 @@ class Singleton(object):
             cls._the_instance = object.__new__(cls)
         return cls._the_instance
 
+
 class InternalSession(Singleton):
-    _internal = {'groups':{}, 'temp_groups':{}}
-    def has_key(self, k): return k in self._internal
-    def get(self, k, default=None): return self._internal.get(k, default)
-    def set(self, k, v): self._internal[k] = v
-    def delitem(self, k): del self._internal[k]
-    def __len__(self): return len(self._internal)
+
+    _internal = {'groups': {}, 'temp_groups': {}}
+
+    def has_key(self, key):
+        return key in self._internal
+
+    def get(self, key, default=None):
+        return self._internal.get(key, default)
+
+    def set(self, key, val):
+        self._internal[key] = val
+
+    def delitem(self, key):
+        del self._internal[key]
+
+    def __len__(self):
+        return len(self._internal)
+
     __setitem__ = set
     __getitem__ = get
     __delitem__ = delitem
 
-    def clear(self): self._internal.clear()
+    def clear(self):
+        self._internal.clear()
+
     def copy(self):
         if self.__class__ is UserDict:
             return Session(self._internal)
         return copy.copy(self)
-    def keys(self): return self._internal.keys()
-    def items(self): return self._internal.items()
-    def values(self): return self._internal.values()
+
+    def keys(self):
+        return self._internal.keys()
+
+    def items(self):
+        return self._internal.items()
+
+    def values(self):
+        return self._internal.values()
 
 
 class Options(Singleton):
@@ -43,6 +65,7 @@ class Options(Singleton):
         configuration_dir = '%s/.flickr_download_helper/' % os.environ['HOME']
     else:
         configuration_dir = '/etc/fdh'
+
     token_file = os.path.join(configuration_dir, 'token')
     backup_dir = os.path.join(configuration_dir, 'backup')
     photo_dir = os.path.join(configuration_dir, 'photo')
@@ -86,8 +109,8 @@ class Options(Singleton):
     sleep_time = 1
     photo_id2destination = {}
     proxy_port = 80
-    logger='console'
-    config_file='/etc/fdh/fdh.ini'
+    logger = 'console'
+    config_file = '/etc/fdh/fdh.ini'
     not_smart = []
     check_md5 = []
     skiped_group = []
@@ -101,6 +124,7 @@ class Options(Singleton):
 
 
 class OptConfigReader(Singleton):
+
     def setup(self, config_file='/etc/fdh/fdh.ini'):
         self.cp = ConfigParser()
         self.cp.read(config_file)
@@ -175,6 +199,7 @@ class OptConfigReader(Singleton):
             if self.cp.has_option("proxy", "pass"):
                 self.opt.proxy_pass = self.cp.get("proxy", "pass")
 
+
 class OptReader(Singleton):
     """
 [Options]
@@ -237,7 +262,7 @@ class OptReader(Singleton):
     --acf --advContactFields        if the fields are not in the getList function but in the getInfo one
 
     """
-    def read(self, script = ''):
+    def read(self, script=''):
         opt = Options()
         try:
             opts, args = getopt.getopt(sys.argv[1:], "hdfrwi:u:n:p:s:l:c:t:g:",
@@ -323,7 +348,7 @@ class OptReader(Singleton):
             elif o in ("--check_n_old_contacts"):
                 opt.check_old_contacts = int(a)
                 opt.contact_to_remove = opt.a_contact_to_remove[int(a)]
-                print "using %s"%opt.contact_to_remove
+                print "using %s" % opt.contact_to_remove
 
             elif o in ("--gcf", "--getContactFields"): opt.getContactFields = a.split(",")
             elif o in ("--acf", "--advContactFields"): opt.advContactFields = True
@@ -337,15 +362,19 @@ class OptReader(Singleton):
             if opt.collection_id and not opt.user_id and not opt.url and not opt.nick and not opt.username:
                 print "collection_id requires a user!"
                 return 2
+
             if opt.tags and not opt.user_id and not opt.url and not opt.nick and not opt.username:
                 print "tags requires a user!"
                 return 2
+
             if opt.try_from_groups and not opt.user_id and not opt.url and not opt.nick and not opt.username:
                 print "try from group requires a user!"
                 return 2
+
         if not opt.retrieve and opt.new_in_dir:
             print "--new_in_dir can only be set when --retrieve is also set : putting new_in_dir to False"
             opt.new_in_dir = False
+
         if not opt.retrieve and opt.daily_in_dir:
             print "--daily_in_dir can only be set when --retrieve is also set : putting daily_in_dir to False"
             opt.daily_in_dir = False
@@ -357,6 +386,7 @@ class OptReader(Singleton):
                     opt.since = int(time.time()) - 3600 * int(since.replace('h', ''))
                 elif 'd' in since:
                     opt.since = int(time.time()) - 3600*24 * int(since.replace('d', ''))
+
         if opt.group_id and not opt.user_id and not opt.url and not opt.nick and not opt.username:
             print "for the moment you must put a user when asking for a group!"
             return 2
@@ -367,9 +397,7 @@ class OptReader(Singleton):
 
         return 0
 
-OPT=Options()
-INS=InternalSession()
 
-
+OPT = Options()
+INS = InternalSession()
 DEFAULT_PERPAGE = 100
-
