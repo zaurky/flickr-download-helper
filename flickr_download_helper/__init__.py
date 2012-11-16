@@ -101,6 +101,24 @@ def create_dir_env(user_name):
     return (user_name, destination)
 
 
+def get_photosets_photos(api, token, user_id, user_name, photosets, existing):
+    urls = {}
+    photo_id2destination = {}
+    destination = ""
+
+    for photoset in photosets:
+        Logger().info("\n== getting photoset %s" % photoset['title'])
+        l_urls, l_photo_id2destination, destination, l_infos = getPhotoset(
+            OPT, api, token, user_name, photoset['id'],
+            photoset['title'], user_id, existing)
+
+        urls = extends(urls, l_urls)
+        photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
+        infos = extends(infos, l_infos)
+
+    return (urls, photo_id2destination, infos)
+
+
 def main(api, token):
     user_name = None
     existing = None
@@ -214,42 +232,22 @@ def main(api, token):
             existing = Existing(user_id, user_name)
 
         if OPT.collection_id:
-            Logger().info("\n== getting collection %s"%OPT.collection_id)
+            Logger().info("\n== getting collection %s" % OPT.collection_id)
 
             OPT.sort_by_user = True
             photosets = getCollectionPhotosets(api, token, OPT.collection_id, user_id)
-            urls = {}
-            photo_id2destination = {}
-            destination = ""
 
-            for photoset in photosets:
-                Logger().info("\n== getting photoset %s"%photoset['title'])
-                l_urls, l_photo_id2destination, destination, infos = getPhotoset(
-                    OPT, api, token, user_name, photoset['id'],
-                    photoset['title'], user_id, existing)
-
-                urls = extends(urls, l_urls)
-                photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
+            urls, photo_id2destination, infos = get_photosets_photos(
+                api, token, user_id, user_name, photosets, existing)
 
         elif OPT.sort_by_photoset:
-            Logger().info("\n== getting user (%s) photoset"%user_id)
+            Logger().info("\n== getting user (%s) photoset" % user_id)
 
             OPT.sort_by_user = True
             photosets = getUserPhotosets(api, token, user_id)
-            urls = {}
-            photo_id2destination = {}
-            destination = ""
 
-            for photoset in photosets:
-                Logger().info("\n== getting photoset %s" % photoset['title'])
-
-                l_urls, l_photo_id2destination, destination, l_infos = getPhotoset(
-                    OPT, api, token, user_name, photoset['id'],
-                    photoset['title'], user_id, existing)
-
-                urls = extends(urls, l_urls)
-                photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
-                infos = extends(infos, l_infos)
+            urls, photo_id2destination, infos = get_photosets_photos(
+                api, token, user_id, user_name, photosets, existing)
 
         elif OPT.try_from_groups or OPT.scan_groups:
             if OPT.group_id:
