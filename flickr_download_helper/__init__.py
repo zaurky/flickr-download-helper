@@ -147,17 +147,12 @@ def main(api, token):
 
     if OPT.photo_id_in_file:
         # work on a list of photos ids
-        content = readFile(OPT.photo_id_in_file)
-        content = content.split("\n")
-        while '' in content:
-            content.remove('')
-
-        OPT.photo_ids = content
+        OPT.photo_ids = filter(lambda line: line != '',
+            readFile(OPT.photo_id_in_file).split("\n"))
 
     if OPT.photoset_id:
         # work on a photoset
         photoset = getPhotosetInfos(api, token, OPT.photoset_id)
-
         photoset_name = photoset['title']
 
         Logger().info("\n== get user information")
@@ -180,22 +175,13 @@ def main(api, token):
         photo_id2username = {}
 
         for photo_id in OPT.photo_ids:
-            try:
-                photo = getPhotoInfo(api, token, photo_id)
-            except:
-                # try again then continue
-                try:
-                    Logger().info("second try to get photo %s infos" % (photo_id))
-                    photo = getPhotoInfo(api, token, photo_id)
-                except Exception, e:
-                    Logger().warn("can't get photo %s (%s)" % (photo_id, e))
+            photo = getPhotoInfo(api, token, photo_id)
 
             if not photo:
                 Logger().warn("can't get photo %s" % photo_id)
                 continue
 
-            username = photo['owner']['username']
-            photo_id2username[photo_id] = username
+            photo_id2username[photo_id] = photo['owner']['username']
             photos.append(photo)
             infos[photo['id']] = photo
 
