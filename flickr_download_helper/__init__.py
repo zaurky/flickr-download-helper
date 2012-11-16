@@ -16,7 +16,7 @@ from datetime import datetime
 from flickr_download_helper.api import *
 from flickr_download_helper.url_parser import UrlParser
 from flickr_download_helper.types import FDHPR
-from flickr_download_helper.utils import extends
+from flickr_download_helper.utils import extends, mkdir
 from flickr_download_helper.config import OptReader, OPT, OptConfigReader, INS
 from flickr_download_helper.proxy import FDHProxySettings
 from flickr_download_helper.existing import Existing, file_load, file_dump
@@ -85,8 +85,7 @@ def create_dir_env(user_name):
 
     try:
         Logger().debug('look if %s exists, else create it' % destination)
-        if OPT.retrieve and not os.path.exists(destination):
-            os.mkdir(destination)
+        mkdir(destination)
     except OSError, err:
         Logger().error("%s: %s (%s)" % (err.errno, err.filename, err.strerror))
         raise
@@ -118,14 +117,12 @@ def main(api, token):
     if OPT.new_in_dir:
         OPT.new_in_dir = os.path.join(OPT.news_dir,
             time.strftime("%Y%m%d%H", time.localtime()))
-        if not os.path.exists(OPT.new_in_dir):
-            os.mkdir(OPT.new_in_dir)
+        mkdir(OPT.new_in_dir)
 
     if OPT.daily_in_dir:
         OPT.daily_in_dir = os.path.join(OPT.news_dir, "daily",
             time.strftime("%Y%m%d", time.localtime()))
-        if not os.path.exists(OPT.daily_in_dir):
-            os.mkdir(OPT.daily_in_dir)
+        mkdir(OPT.daily_in_dir)
 
     if OPT.get_url:
         UrlParser(OPT.get_url).fill_opt(api, token)
@@ -309,25 +306,28 @@ def main(api, token):
             urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
             user_name, destination = create_dir_env(user_name)
 
-        elif OPT.tags or OPT.group_id:
-            if OPT.tags:
-                Logger().info("\n== getting photos in tag %s" % OPT.tags)
-                photos = getPhotosByTag(api, token, user_id, OPT.tags)
-            else:
-                Logger().info("\n== getting user %s files in group %s" % (
-                    user_name, OPT.group_id))
-                photos = getGroupPhotos(
-                    api, token, OPT.group_id, user_id=user_id, per_page=500)
+        elif OPT.tags:
+            Logger().info("\n== getting photos in tag %s" % OPT.tags)
+            photos = getPhotosByTag(api, token, user_id, OPT.tags)
 
             existing, photos, infos = filter_photos(
                 user_id, user_name, photos, existing)
             urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
             user_name, destination = create_dir_env(user_name)
 
-            if OPT.tags:
-                destination = os.path.join(destination, OPT.tags)
-                if OPT.retrieve and not os.path.exists(destination):
-                    os.mkdir(destination)
+            destination = os.path.join(destination, OPT.tags)
+            mkdir(destination)
+
+        elif OPT.group_id:
+            Logger().info("\n== getting user %s files in group %s" % (
+                user_name, OPT.group_id))
+            photos = getGroupPhotos(
+                api, token, OPT.group_id, user_id=user_id, per_page=500)
+
+            existing, photos, infos = filter_photos(
+                user_id, user_name, photos, existing)
+            urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+            user_name, destination = create_dir_env(user_name)
 
         elif OPT.search:
             photos = searchPhotos(api, token, user_id, OPT.search)
