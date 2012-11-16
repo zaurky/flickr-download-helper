@@ -10,7 +10,6 @@ To have the description of the parameters, please read flickr_download_helper.co
 
 import sys
 import os
-import re
 import time
 from datetime import datetime
 
@@ -50,7 +49,7 @@ def main_init(read_command_line=True):
             Logger().error("Couldn't init flickr api")
             Logger().error(r)
 
-        raise Exception("Couldn't init flickr api %s" % (str(r)))
+        raise Exception("Couldn't init flickr api %s" % (r,))
     return r
 
 
@@ -88,16 +87,16 @@ def create_dir_env(user_name):
         Logger().debug('look if %s exists, else create it' % destination)
         if OPT.retrieve and not os.path.exists(destination):
             os.mkdir(destination)
-    except OSError, e:
-        Logger().error("%s: %s (%s)" % (e.errno, e.filename, e.strerror))
+    except OSError, err:
+        Logger().error("%s: %s (%s)" % (err.errno, err.filename, err.strerror))
         raise
-    except UnicodeEncodeError, e:
-        Logger().error(str(e))
-        Logger().error(e.message)
+    except UnicodeEncodeError, err:
+        Logger().error(str(err))
+        Logger().error(err.message)
         raise
-    except Exception, e:
-        Logger().error(str(e))
-        Logger().print_tb(e)
+    except Exception, err:
+        Logger().error(str(err))
+        Logger().print_tb(err)
         raise
 
     return (user_name, destination)
@@ -207,7 +206,7 @@ def main(api, token):
                     Logger().info("second try to get photo %s infos" % (photo_id))
                     photo = getPhotoInfo(api, token, photo_id)
                 except Exception, e:
-                    Logger().warn("can't get photo %s (%s)" % (photo_id, str(e)))
+                    Logger().warn("can't get photo %s (%s)" % (photo_id, e))
 
             if not photo:
                 Logger().warn("can't get photo %s" % photo_id)
@@ -453,7 +452,7 @@ def main(api, token):
             DownloadFile().write("%s %s %s" % (
                 str(datetime.now()), total, user_name))
 
-    if existing and len(urls):
+    if existing and urls:
         # we only save photo cache when something has been downloaded
         existing.backupToFile()
 
