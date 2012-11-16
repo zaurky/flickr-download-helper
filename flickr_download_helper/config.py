@@ -98,7 +98,7 @@ class Options(Singleton):
     collection_id = photo_id_in_file = photo_ids = tags = None
     username = proxy_user = proxy_pass = None
     proxy = since = loop = group_id = downloads_file = None
-    jabber_last = only_collect = None
+    jabber_last = only_collect = search = None
 
     sort_by_user = interactive = True
     sort_by_photoset = retrieve = force = new_in_dir = False
@@ -220,6 +220,7 @@ class OptReader(Singleton):
     -t --tags                       a tag list (separated by commas) it requires a user is set
     -g --group_id                   a group id, can be used with a user
        --get_url                    download gessing what you want from the url schema
+       --search                     search something in a user photos
 
        --sbu --sort_by_user         only valid when --photo_id_in_file is set.
                                     create a directory per user and sort photos by user
@@ -281,7 +282,8 @@ class OptReader(Singleton):
                         "group_id=", 'try_from_groups', 'tfg',
                         "fgv", "force_group_verbose", 'get_url=',
                         "sg", "scan_groups", "ci=", "contact_ids=",
-                        "gfc", "group_from_cache", "check_n_old_contacts="
+                        "gfc", "group_from_cache", "check_n_old_contacts=",
+                        "search=",
                     ])
         except getopt.error, msg:
             print self.__doc__
@@ -352,6 +354,7 @@ class OptReader(Singleton):
 
             elif o in ("--gcf", "--getContactFields"): opt.getContactFields = a.split(",")
             elif o in ("--acf", "--advContactFields"): opt.advContactFields = True
+            elif o in ("--search"): opt.search = a
             else:
                 print self.__doc__
                 return 2
@@ -389,6 +392,10 @@ class OptReader(Singleton):
 
         if opt.group_id and not opt.user_id and not opt.url and not opt.nick and not opt.username:
             print "for the moment you must put a user when asking for a group!"
+            return 2
+
+        if opt.search and not opt.user_id and not opt.url and not opt.nick and not opt.username:
+            print "Search are limited to a user!"
             return 2
 
 
