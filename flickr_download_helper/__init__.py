@@ -103,6 +103,7 @@ def create_dir_env(user_name):
 
 def get_photosets_photos(api, token, user_id, user_name, photosets, existing):
     urls = {}
+    infos = {}
     photo_id2destination = {}
     destination = ""
 
