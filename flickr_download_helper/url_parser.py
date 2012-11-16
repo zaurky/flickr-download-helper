@@ -72,6 +72,9 @@ class UrlParser(object):
             elif keyword == 'groups' and extra1 == 'pool':
                 Logger().info("user %s in groups %s" % (extra2, param))
                 return (FDHPR.INGROUP, extra2, param)
+            elif keyword == 'photos' and extra1 == 'search':
+                Logger().info("search %s in %s" % (extra2, param))
+                return (FDHPR.SEARCH, param, extra2)
 
         return (FDHPR.ERROR)
 
@@ -108,6 +111,8 @@ class UrlParser(object):
         elif url[0] == FDHPR.INGROUP:
             group = searchGroup(api, token, url[2])
             OPT.group_id = group['id']
+        elif url[0] == FDHPR.SEARCH:
+            OPT.search = url[2]
         elif url[0] in (FDHPR.ERROR, FDHPR.ERROR_NOURL, FDHPR.ERROR_NOTFLICKR):
             OPT.url = OPT.user_id = None
             Logger().error("error parsing OPT.get_url : %s" % (url[0]))

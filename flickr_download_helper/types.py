@@ -15,6 +15,7 @@ class FlickrDownloadHelperParserResponse:
     TAG = 7
     GROUP = 8
     INGROUP = 9
+    SEARCH = 13
 
     ERROR = 10
     ERROR_NOURL = 11
