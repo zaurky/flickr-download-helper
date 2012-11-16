@@ -3,6 +3,7 @@ all the flickr_download_helper functions
 """
 
 from flickr_download_helper.config import OPT, INS, DEFAULT_PERPAGE
+from flickr_download_helper.config import Singleton
 from flickr_download_helper.existing import Existing, FileWrite
 from flickr_download_helper.existing import file_load, file_dump
 from flickr_download_helper.token import initialisationFlickrApi
@@ -20,6 +21,48 @@ import re
 import md5
 import marshal
 from datetime import datetime
+
+
+
+
+from flickr_download_helper.config import OptConfigReader, OptReader
+from flickr_download_helper.proxy import FDHProxySettings
+from flickr_download_helper.utils import singleton
+
+
+@singleton
+class API(object):
+
+    def __init__(self, read_command_line=True):
+        config = OptConfigReader()
+        config.setup()
+
+        if read_command_line:
+            opt = OptReader()
+            ret = opt.read()
+            if ret: return ret
+
+        Logger().setup()
+        Logger().warn("##########################################################")
+        Logger().warn("%s (running as %s)" % (" ".join(sys.argv), os.getpid()))
+        Logger().debug("LANG is %s" % os.environ.get('LANG'))
+
+        proxy = FDHProxySettings()
+        proxy.setValues(OPT)
+        proxy.activate()
+
+        # init of the flickr api
+        r = initialisationFlickrApi(OPT)
+        if not isinstance(r, (list, tuple)) or len(r) != 2:
+            if r != 6:
+                Logger().error("Couldn't init flickr api")
+                Logger().error(r)
+
+            raise Exception("Couldn't init flickr api %s" % (r,))
+        self.api, self.token = r
+
+    def getPhotoInfo(self, photo_id):
+        return getPhotoInfo(self.api, self.token, photo_id)
 
 
 def getPhotoInfo(api, token, photo_id):
