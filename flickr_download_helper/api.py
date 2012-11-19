@@ -63,6 +63,10 @@ class API(object):
             content_type=7)
         return rsp_json['group'] if rsp_json else []
 
+    def searchGroup(self, group_name):
+        return self.searchGroupByUrl(
+            'http://www.flickr.com/groups/%s' % group_name)
+
     def getPhotoExif(self, photo_id):
         rsp_json = self.request('photos.getExif',
             "photo EXIF for %s", [photo_id], photo_id=photo_id)
@@ -226,6 +230,127 @@ class API(object):
 
             file_dump(_get_path(batch), content)
 
+    def getUserFromUrl(self, url):
+        rsp_json = self.request('urls.lookupUser',
+            "lookup for user url %s", [url], url=url, sign=False)
+        return rsp_json['user'] if rsp_json else {}
+
+    def getUserFromNick(self, nick):
+        try:
+            return getUserFromUrl(getUserURL(nick))
+        except Exception, e:
+            Logger().error("while looking up for user %s (%s)" % (
+                nick, e.message))
+
+    def getUserFromAll(api, u_string):
+        for func in (
+                    getUserFromUrl, getUserFromNick,
+                    getUserFromUsername, getUserFromID,
+                ):
+            user = getattr(self, func)(u_string)
+            if user: return user
+
+    def getUser(self):
+        Logger().info("\n== get user_id")
+
+        if not OPT.user_id:
+            if OPT.url:
+                return self.getUserFromUrl(OPT.url)
+            elif OPT.nick:
+                return self.getUserFromNick(OPT.nick)
+            elif OPT.username:
+                return self.getUserFromUsername(OPT.username)
+            else:
+                Logger().error("can't get any user_id")
+        elif OPT.user_hash.get(OPT.user_id):
+            return OPT.user_hash[OPT.user_id]
+        else:
+            return self.getUserFromID(OPT.user_id)
+
+    # get group photos
+    def getGroupPhotos(self, group_id, page=1, user_id=None, per_page=None):
+        Logger().info("getGroupPhotos %s %s %s" % (group_id, page, user_id))
+        if not user_id and INS.get('put_group_in_session'):
+            group_data = INS['groups'].get(group_id)
+            if group_data:
+                return group_data
+
+        gpath = os.path.join(OPT.groups_full_content_dir, group_id)
+        if not user_id and OPT.group_from_cache:
+            if os.path.exists(gpath):
+                l_photos = file_load(gpath)
+                if l_photos:
+                    Logger().debug("%s loaded from cache" % group_id)
+
+                    if INS.get('put_group_in_session'):
+                        INS['groups'][group_id] = l_photos
+
+                    return l_photos
+
+        if not per_page:
+            if not user_id and INS.get('put_group_in_session') and \
+                    not OPT.group_from_cache:
+                per_page = DEFAULT_PERPAGE
+            else:
+                per_page = 500
+
+        rsp_json = self.request('groups.pools.getPhotos',
+            "photos from group %s for user %s, page %i",
+            [group_id, user_id, page], page=page, per_page=per_page,
+            group_id=group_id, user_id=user_id, content_type=7)
+        if not rsp_json: return []
+
+        content = rsp_json['photos']['photo']
+        g_size = int(rsp_json['photos']['total'])
+        total = len(content) + (page - 1) * per_page
+
+        Logger().debug("%s has %d results" % (group_id, g_size))
+
+        def _cache_group(group_id, content, gpath=gpath):
+            if not user_id:
+                if INS.get('put_group_in_session'):
+                    INS['groups'][group_id] = content
+
+                INS.get('temp_groups', {}).pop(group_id)
+                file_dump(gpath, content)
+            return content
+
+        temp_groups_key = "%s%s" % (group_id, user_id or '')
+        l_photos = INS.get('temp_groups', {}).get(temp_groups_key, [])
+
+        if not user_id and not l_photos and os.path.exists(gpath):
+            Logger().debug("load file %s" % gpath)
+            l_photos = file_load(gpath) or []
+
+        if len(l_photos) >= g_size:
+            return _cache_group(group_id, l_photos)
+
+        ids = map(lambda x: x['id'], l_photos)
+        for i in content:
+            if i['id'] not in ids:
+                l_photos.append(i)
+
+        # remove duplicates on id
+        l_photos = dict(map(lambda x: (x['id'], x), l_photos)).values()
+
+        Logger().debug("getGroupPhotos %d %d %d" % (
+            len(l_photos), g_size, len(content)))
+
+        if len(l_photos) >= g_size or not content:
+            return _cache_group(group_id, l_photos)
+
+        content = l_photos
+        total = len(l_photos)
+
+        if total < g_size:
+            if g_size - total < 500:
+                per_page = DEFAULT_PERPAGE
+
+            INS['temp_groups'][temp_groups_key] = content
+            content = self.getGroupPhotos(group_id, page + 1, user_id,
+                per_page=per_page)
+
+        return content
 
 ####
 
@@ -316,92 +441,30 @@ def getGroupPhotosFromScratch(_, _, group_id, batch=0, page_in_batch=100,
 def groupFromScratch(_, _, group_id):
     return API().groupFromScratch(group_id)
 
+def searchGroup(_, _, group_name):
+    return API().searchGroupByUrl(group_name)
+
+
+def getUserFromUrl(_, url):
+    return API().getUserFromUrl(url)
+
+
+def getUserFromNick(_, nick):
+    return API().getUserFromNick(nick)
+
+
+def getUserFromAll(_, u_string):
+    return API().getUserFromAll(u_string)
+
+
+def getUser(_, _):
+    return API().getUser()
+
+
 
 ### TODO integrate that in API class
-def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
-    if not user_id and INS.get('put_group_in_session'):
-        group_data = INS['groups'].get(group_id)
-        if group_data:
-            return group_data
-
-    Logger().info("getGroupPhotos %s %s %s" % (group_id, page, user_id))
-
-    gpath = os.path.join(OPT.groups_full_content_dir, group_id)
-    if not user_id and OPT.group_from_cache:
-        if os.path.exists(gpath):
-            l_photos = file_load(gpath)
-            if l_photos:
-                Logger().debug("%s loaded from cache" % group_id)
-
-                if INS.get('put_group_in_session'):
-                    INS['groups'][group_id] = l_photos
-
-                return l_photos
-
-    if not per_page:
-        if not user_id and INS.get('put_group_in_session') and \
-                not OPT.group_from_cache:
-            per_page = DEFAULT_PERPAGE
-        else:
-            per_page = 500
-
-    rsp_json = Flickr().request('groups.pools.getPhotos',
-        "photos from group %s for user %s, page %i", [group_id, user_id, page],
-        page=page, per_page=per_page, group_id=group_id, user_id=user_id,
-        content_type=7)
-    if not rsp_json: return []
-
-    content = rsp_json['photos']['photo']
-    g_size = int(rsp_json['photos']['total'])
-    total = len(content) + (page - 1) * per_page
-
-    Logger().debug("%s has %d results" % (group_id, g_size))
-
-    def _cache_group(group_id, content, gpath=gpath):
-        if not user_id:
-            if INS.get('put_group_in_session'):
-                INS['groups'][group_id] = content
-
-            INS.get('temp_groups', {}).pop(group_id)
-            file_dump(gpath, content)
-        return content
-
-    temp_groups_key = "%s%s" % (group_id, user_id or '')
-    l_photos = INS.get('temp_groups', {}).get(temp_groups_key, [])
-
-    if not user_id and not l_photos and os.path.exists(gpath):
-        Logger().debug("load file %s" % gpath)
-        l_photos = file_load(gpath) or []
-
-    if len(l_photos) >= g_size:
-        return _cache_group(group_id, l_photos)
-
-    ids = map(lambda x: x['id'], l_photos)
-    for i in content:
-        if i['id'] not in ids:
-            l_photos.append(i)
-
-    # remove duplicates on id
-    l_photos = dict(map(lambda x: (x['id'], x), l_photos)).values()
-
-    Logger().debug("getGroupPhotos %d %d %d" % (
-        len(l_photos), g_size, len(content)))
-
-    if len(l_photos) >= g_size or len(content) == 0:
-        return _cache_group(group_id, l_photos)
-
-    content = l_photos
-    total = len(l_photos)
-
-    if total < g_size:
-        if g_size - total < 500:
-            per_page = DEFAULT_PERPAGE
-
-        INS['temp_groups'][temp_groups_key] = content
-        content = getGroupPhotos(api, token, group_id, page + 1, user_id,
-            per_page=per_page)
-
-    return content
+def getGroupPhotos(_, _, group_id, page=1, user_id=None, per_page=None):
+    return API().getGroupPhotos(group_id, page, user_id, per_page)
 
 
 def getUserPhotos(api, token, user_id, min_upload_date=None, page=1,
@@ -477,51 +540,6 @@ def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
         urls[photo['id']] = url
 
     return urls
-
-
-def searchGroup(api, token, group_name):
-    return searchGroupByUrl(api, token,
-        'http://www.flickr.com/groups/%s' % group_name)
-
-
-def getUserFromUrl(api, url):
-    rsp_json = Flickr().request('urls.lookupUser',
-        "lookup for user url %s", [url], url=url, sign=False)
-    return rsp_json['user'] if rsp_json else {}
-
-
-def getUserFromNick(api, nick):
-    try:
-        return getUserFromUrl(api, getUserURL(nick))
-    except Exception, e:
-        Logger().error("while looking up for user %s (%s)" % (nick, e.message))
-
-
-def getUserFromAll(api, u_string):
-    for func in (
-                getUserFromUrl, getUserFromNick,
-                getUserFromUsername, getUserFromID,
-            ):
-        user = func(api, u_string)
-        if user: return user
-
-
-def getUser(api, token):
-    Logger().info("\n== get user_id")
-
-    if not OPT.user_id:
-        if OPT.url:
-            return getUserFromUrl(api, OPT.url)
-        elif OPT.nick:
-            return getUserFromNick(api, OPT.nick)
-        elif OPT.username:
-            return getUserFromUsername(api, OPT.username)
-        else:
-            Logger().error("can't get any user_id")
-    elif OPT.user_hash.get(OPT.user_id):
-        return OPT.user_hash[OPT.user_id]
-    else:
-        return getUserFromID(api, OPT.user_id)
 
 
 def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
@@ -623,29 +641,6 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
     return len(content)
 
 
-def backupUser(user_id, photos, backup_dir):
-    fhandle = open(os.path.join(backup_dir, user_id), 'wb')
-    marshal.dump(photos, fhandle)
-    fhandle.close()
-
-
-def restoreUser(user_id, backup_dir):
-    filepath = os.path.join(backup_dir, user_id)
-    if os.path.exists(filepath):
-        fhandle = open(filepath, 'rb')
-        ret = marshal.load(fhandle)
-        fhandle.close()
-    else:
-        Logger().error("while restoring %s (file not found)" % user_id)
-        return
-    return ret
-
-
-def _mkdir_photoset(destination):
-    mkdir(os.path.dirname(destination))
-    mkdir(destination)
-
-
 def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name,
             user_id, existing=None):
         photo_id2destination = {}
@@ -697,6 +692,31 @@ def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name,
         urls = getPhotoURLFlickr(api, token, photos, opt.fast_photo_url)
 
         return (urls, photo_id2destination, destination, infos)
+
+
+# keep them as functions
+def backupUser(user_id, photos, backup_dir):
+    fhandle = open(os.path.join(backup_dir, user_id), 'wb')
+    marshal.dump(photos, fhandle)
+    fhandle.close()
+
+
+def restoreUser(user_id, backup_dir):
+    filepath = os.path.join(backup_dir, user_id)
+    if os.path.exists(filepath):
+        fhandle = open(filepath, 'rb')
+        ret = marshal.load(fhandle)
+        fhandle.close()
+    else:
+        Logger().error("while restoring %s (file not found)" % user_id)
+        return
+    return ret
+
+
+def _mkdir_photoset(destination):
+    # TODO mkpath
+    mkdir(os.path.dirname(destination))
+    mkdir(destination)
 
 
 def getStaticContactList():
