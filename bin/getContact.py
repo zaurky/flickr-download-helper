@@ -34,7 +34,7 @@ def encode(string):
 contact_id = OPT.user_id
 line = []
 
-c = getUserFromID(api, contact_id, token)
+c = getUserFromID(api, contact_id, True)
 
 if OPT.getContactFields:
     for field in OPT.getContactFields:

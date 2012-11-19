@@ -48,10 +48,10 @@ for c in contacts:
     user = None
     if OPT.advContactFields:
         try:
-            user = getUserFromID(api, c['nsid'], token)
+            user = getUserFromID(api, c['nsid'], True)
         except:
             # second try
-            user = getUserFromID(api, c['nsid'], token)
+            user = getUserFromID(api, c['nsid'], True)
     for field in OPT.getContactFields:
         if field in c: line.append(c[field].strip())
         elif user and field in user:

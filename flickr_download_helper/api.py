@@ -3,138 +3,99 @@ all the flickr_download_helper functions
 """
 
 from flickr_download_helper.config import OPT, INS, DEFAULT_PERPAGE
-from flickr_download_helper.config import Singleton
 from flickr_download_helper.existing import Existing, FileWrite
 from flickr_download_helper.existing import file_load, file_dump
-from flickr_download_helper.token import initialisationFlickrApi
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.downloads_file import DownloadFile
 from flickr_download_helper.utils import (waitFor, readFile, mkdir,
     downloadProtect, getThumbURL, getPhotoURL, getUserURL,
     selectSmallerPhotoSizeURL, selectBiggerPhotoSizeURL, selectMediaURL)
-from flickr_download_helper.flickr import json_request
 from flickr_download_helper import exif
-import xml.etree.ElementTree
 import sys
 import os
 import re
 import md5
 import marshal
 from datetime import datetime
+from flickr_download_helper.flickr import API as Flickr
 
 
-
-
-from flickr_download_helper.config import OptConfigReader, OptReader
-from flickr_download_helper.proxy import FDHProxySettings
-from flickr_download_helper.utils import singleton
-
-
-@singleton
 class API(object):
+    _flickr = None
 
     def __init__(self, read_command_line=True):
-        config = OptConfigReader()
-        config.setup()
+        self._flickr = Flickr(read_command_line)
 
-        if read_command_line:
-            opt = OptReader()
-            ret = opt.read()
-            if ret: return ret
-
-        Logger().setup()
-        Logger().warn("##########################################################")
-        Logger().warn("%s (running as %s)" % (" ".join(sys.argv), os.getpid()))
-        Logger().debug("LANG is %s" % os.environ.get('LANG'))
-
-        proxy = FDHProxySettings()
-        proxy.setValues(OPT)
-        proxy.activate()
-
-        # init of the flickr api
-        r = initialisationFlickrApi(OPT)
-        if not isinstance(r, (list, tuple)) or len(r) != 2:
-            if r != 6:
-                Logger().error("Couldn't init flickr api")
-                Logger().error(r)
-
-            raise Exception("Couldn't init flickr api %s" % (r,))
-        self.api, self.token = r
-
-    def _json_request(self, *attr, **kargs):
-        sign = kargs.pop('sign', True)
-        if sign:
-            return json_request(self.api, self.token, *attr, **kargs)
-        else:
-            return json_request(self.api, None, *attr, **kargs)
+    def request(self, *attr, **kargs):
+        return self._flickr.request(*attr, **kargs)
 
     # simple methods
     def getPhotoInfo(self, photo_id):
-        rsp_json = self._json_request('photos.getInfo',
+        rsp_json = self.request('photos.getInfo',
             "photo info for %s", [photo_id], photo_id=photo_id)
         return rsp_json['photo'] if rsp_json else None
 
     def getPhotosetInfos(self, photoset_id):
-        rsp_json = self._json_request('photosets.getInfo',
+        rsp_json = self.request('photosets.getInfo',
             "photoset %s informations", [photoset_id], photoset_id=photoset_id)
         return rsp_json['photoset'] if rsp_json else None
 
     def getCollectionInfo(self, collection_id):
-        rsp_json = self._json_request('collections.getInfo',
+        rsp_json = self.request('collections.getInfo',
             "informations for collection %s", [collection_id],
             collection_id=collection_id)
         return rsp_json['collection'] if rsp_json else None
 
-    def getUserFromID(self, user_id, token=None):
-        rsp_json = self._json_request('people.getInfo',
-            "user informations for %s", [user_id], user_id=user_id, sign=False)
+    def getUserFromID(self, user_id, sign=False):
+        rsp_json = self.request('people.getInfo',
+            "user informations for %s", [user_id], user_id=user_id, sign=sign)
         return rsp_json['person'] if rsp_json else None
 
     def getUserFromUsername(self, user_name):
-        rsp_json = self._json_request('people.findByUsername',
+        rsp_json = self.request('people.findByUsername',
             "user %s from username", [user_name], username=user_name,
             sign=False)
         return rsp_json['user'] if rsp_json else None
 
     def searchGroupByUrl(self, group_url):
-        rsp_json = self._json_request('urls.lookupGroup',
+        rsp_json = self.request('urls.lookupGroup',
             " info for group %s from url", [group_url], url=group_url,
             content_type=7)
         return rsp_json['group'] if rsp_json else []
 
     def getPhotoExif(self, photo_id):
-        rsp_json = self._json_request('photos.getExif',
+        rsp_json = self.request('photos.getExif',
             "photo EXIF for %s", [photo_id], photo_id=photo_id)
         return rsp_json['photo']['exif'] if rsp_json else None
 
     def getPhotoSize(self, photo_id):
-        rsp_json = self._json_request('photos.getSizes',
+        rsp_json = self.request('photos.getSizes',
             "photo size for %s", [photo_id], photo_id=photo_id)
         return rsp_json['sizes']['size'] if rsp_json else None
 
     def getUserGroups(self, user_id, page=1):
-        rsp_json = self._json_request('people.getPublicGroups',
+        rsp_json = self.request('people.getPublicGroups',
             "user %s groups, page %i", [user_id, page],
             page=page, user_id=user_id, content_type=7, invitation_only=1)
         return rsp_json['groups']['group'] if rsp_json else []
 
     def countGroupPhotos(self, group_id):
-        rsp_json = self._json_request('groups.pools.getPhotos',
+        rsp_json = self.request('groups.pools.getPhotos',
             "photos from group %s", [group_id], per_page=1, group_id=group_id)
         return rsp_json['photos']['total'] if rsp_json else 0
 
     def getUserPhotosets(self, user_id):
-        rsp_json = self._json_request('photosets.getList',
+        rsp_json = self.request('photosets.getList',
             "photosets for user %s", [user_id], user_id=user_id)
         return rsp_json['photosets']['photoset'] if rsp_json else None
 
     def getContactsLatestPhotos(self, page=1):
-        rsp_json = self._json_request('photos.getContactsPhotos',
+        rsp_json = self.request('photos.getContactsPhotos',
             'the contacts photos', page=page, count=50)
         return rsp_json['photos']['photo'] if rsp_json else []
 
     def getCollectionPhotosets(self, collection_id, user_id):
-        rsp_json = self._json_request('collections.getTree',
+        rsp_json = self.request('collections.getTree',
             "photosets for user (%s) collection %s", [user_id, collection_id],
             collection_id=collection_id, user_id=user_id, content_type=7)
 
@@ -166,7 +127,7 @@ class API(object):
         return ret
 
     def _getPhotosetPhotos(self, photoset_id, page):
-        rsp_json = self._json_request('photosets.getPhotos',
+        rsp_json = self.request('photosets.getPhotos',
             "photos from %s photoset, page %i", [photoset_id, page],
             page=page, per_page=DEFAULT_PERPAGE, photoset_id=photoset_id,
             content_type=7)
@@ -177,7 +138,7 @@ class API(object):
             ['photoset', 'photo'], photoset_id, page=page)
 
     def _getUserLastPhotos(self, user_id, since, page):
-        rsp_json = self._json_request('photos.recentlyUpdated',
+        rsp_json = self.request('photos.recentlyUpdated',
             "last %s's photos page %i", [user_id, page], page=page,
             per_page=DEFAULT_PERPAGE, user_id=user_id, content_type=7,
             min_date=since)
@@ -188,7 +149,7 @@ class API(object):
             ['photos', 'photo'], user_id, since, page=page)
 
     def _getPhotosByTag(self, user_id, tags, page):
-        rsp_json = self._json_request('photos.search', "searched photos",
+        rsp_json = self.request('photos.search', "searched photos",
             user_id=user_id, tags=tags, content_type=7, page=page)
         return rsp_json or []
 
@@ -197,7 +158,7 @@ class API(object):
             ['photos', 'photo'], user_id, tags, page=page)
 
     def _searchPhotos(self, user_id, search, page):
-        rsp_json = self._json_request('photos.search', "searched photos",
+        rsp_json = self.request('photos.search', "searched photos",
             user_id=user_id, text=search, content_type=7, page=page)
         return rsp_json or []
 
@@ -206,7 +167,7 @@ class API(object):
             ['photos', 'photo'], user_id, search, page=page)
 
     def _getContactList(self, page):
-        rsp_json = self._json_request('contacts.getList',
+        rsp_json = self.request('contacts.getList',
             'the contact list', page=page, sort='time')
         return rsp_json or []
 
@@ -215,7 +176,7 @@ class API(object):
             ['contacts', 'contact'], page=page)
 
     def _getUserFavorites(self, user_id, min_fave_date, page):
-        rsp_json = self._json_request('favorites.getList', '%s favorites',
+        rsp_json = self.request('favorites.getList', '%s favorites',
             [user_id], user_id=user_id, page=page, content_type=7,
             min_fave_date=min_fave_date)
         return rsp_json or []
@@ -232,7 +193,7 @@ class API(object):
         content = []
         for spage in range(1, page_in_batch + 1):
             page = spage + batch * page_in_batch
-            rsp_json = self._json_request('groups.pools.getPhotos',
+            rsp_json = self.request('groups.pools.getPhotos',
                 "photos from group %s, page %i", [group_id, page],
                 page=page, per_page=per_page, group_id=group_id, content_type=7)
 
@@ -245,7 +206,7 @@ class API(object):
         return content
 
     def groupFromScratch(self, group_id):
-        rsp_json = self._json_request('groups.pools.getPhotos',
+        rsp_json = self.request('groups.pools.getPhotos',
             "photos from group %s", [group_id], per_page=1, group_id=group_id)
         total = int(rsp_json['photos']['total'])
 
@@ -269,90 +230,90 @@ class API(object):
 ####
 
 
-def getPhotoInfo(api, token, photo_id):
+def getPhotoInfo(_, _, photo_id):
     return API().getPhotoInfo(photo_id)
 
 
-def getPhotosetInfos(api, token, photoset_id):
+def getPhotosetInfos(_, _, photoset_id):
     return API().getPhotosetInfos(photoset_id)
 
 
-def getCollectionInfo(api, token, collection_id):
+def getCollectionInfo(_, _, collection_id):
     return API().getCollectionInfo(collection_id)
 
 
-def getUserFromID(api, user_id, token=None):
-    return API().getUserFromID(user_id, token)
+def getUserFromID(_, user_id, sign=False):
+    return API().getUserFromID(user_id, sign)
 
 
-def getUserFromUsername(api, user_name):
+def getUserFromUsername(_, user_name):
     return API().getUserFromUsername(user_name)
 
 
-def searchGroupByUrl(api, token, group_url):
+def searchGroupByUrl(_, _, group_url):
     return API().searchGroupByUrl(group_url)
 
 
-def getPhotoExif(api, token, photo_id):
+def getPhotoExif(_, _, photo_id):
     return API().getPhotoExif(photo_id)
 
 
-def getPhotoSize(api, token, photo_id):
+def getPhotoSize(_, _, photo_id):
     return API().getPhotoSize(photo_id)
 
 
-def getUserGroups(api, token, user_id, page=1):
+def getUserGroups(_, _, user_id, page=1):
     return API().getUserGroups(user_id, page)
 
 
-def countGroupPhotos(api, token, group_id):
+def countGroupPhotos(_, _, group_id):
     return API().countGroupPhotos(group_id)
 
 
-def getUserPhotosets(api, token, user_id):
+def getUserPhotosets(_, _, user_id):
     return API().getUserPhotosets(user_id)
 
 
-def getContactsLatestPhotos(api, token, page=1):
+def getContactsLatestPhotos(_, _, page=1):
     return API().getContactsLatestPhotos(page)
 
 
-def getCollectionPhotosets(api, token, collection_id, user_id):
+def getCollectionPhotosets(_, _, collection_id, user_id):
     return API().getCollectionPhotosets(collection_id, user_id)
 
 
-def getPhotosetPhotos(api, token, photoset_id, page=1):
+def getPhotosetPhotos(_, _, photoset_id, page=1):
     return API().getPhotosetPhotos(photoset_id, page)
 
 
-def getUserLastPhotos(api, token, user_id, since, page=1):
+def getUserLastPhotos(_, _, user_id, since, page=1):
     return API().getUserLastPhotos(user_id, since, page)
 
 
-def getPhotosByTag(api, token, user_id, tags, page=1):
+def getPhotosByTag(_, _, user_id, tags, page=1):
     return API().getPhotosByTag(user_id, tags, page)
 
 
-def searchPhotos(api, token, user_id, search, page=1):
+def searchPhotos(_, _, user_id, search, page=1):
     return API().searchPhotos(user_id, search, page)
 
 
-def getContactList(api, token, page=1):
+def getContactList(_, _, page=1):
     return API().getContactList(page)
 
 
-def getUserFavorites(api, token, user_id, page=1, one_shot=False,
+def getUserFavorites(_, _, user_id, page=1, one_shot=False,
         per_page=DEFAULT_PERPAGE, min_fave_date=None):
     return API().getUserFavorites(user_id, page, one_shot, per_page,
         min_fave_date)
 
 
-def getGroupPhotosFromScratch(api, token, group_id, batch=0, page_in_batch=100,
+def getGroupPhotosFromScratch(_, _, group_id, batch=0, page_in_batch=100,
         per_page=500):
     return API().getGroupPhotosFromScratch(group_id, batch, page_in_batch, per_page)
 
 
-def groupFromScratch(api, token, group_id):
+def groupFromScratch(_, _, group_id):
     return API().groupFromScratch(group_id)
 
 
@@ -384,7 +345,7 @@ def getGroupPhotos(api, token, group_id, page=1, user_id=None, per_page=None):
         else:
             per_page = 500
 
-    rsp_json = json_request(api, token, 'groups.pools.getPhotos',
+    rsp_json = Flickr().request('groups.pools.getPhotos',
         "photos from group %s for user %s, page %i", [group_id, user_id, page],
         page=page, per_page=per_page, group_id=group_id, user_id=user_id,
         content_type=7)
@@ -457,7 +418,7 @@ def getUserPhotos(api, token, user_id, min_upload_date=None, page=1,
     if min_upload_date:
         kargs['min_upload_date'] = min_upload_date
 
-    rsp_json = json_request(api, token, 'people.getPhotos',
+    rsp_json = Flickr().request('people.getPhotos',
         "%s's photos page %i", [user_id, page], **kargs)
     if not rsp_json: return []
 
@@ -523,9 +484,9 @@ def searchGroup(api, token, group_name):
         'http://www.flickr.com/groups/%s' % group_name)
 
 
-def getUserFromUrl(api, url, from_nick=False):
-    rsp_json = json_request(api, None, 'urls.lookupUser',
-        "lookup for user url %s", [url], url=url)
+def getUserFromUrl(api, url):
+    rsp_json = Flickr().request('urls.lookupUser',
+        "lookup for user url %s", [url], url=url, sign=False)
     return rsp_json['user'] if rsp_json else {}
 
 
@@ -585,13 +546,13 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
         index = 0
         while os.path.exists(filename):
             index += 1
-            f = re.split('\.', filename)
+            fname = re.split('\.', filename)
             if index == 1:
-                f.insert(len(f) - 1, str(index))
+                fname.insert(len(fname) - 1, str(index))
             else:
-                f[len(f) - 2] = str(index)
+                fname[len(fname) - 2] = str(index)
 
-            filename = '.'.join(f)
+            filename = '.'.join(fname)
             possible_files.append(filename)
 
         possible_files.pop()
@@ -601,14 +562,14 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
     if info:
         try:
             exif.fillFile(None, None, filename, info=info)
-        except Exception, e:
+        except Exception, err:
             Logger().warn("Failed to put exif")
-            Logger().warn(e)
+            Logger().warn(err)
 
     if check_exists and old_filename != filename:
-        f = open(filename, 'rb')
-        content = f.read()
-        f.close()
+        fhandle = open(filename, 'rb')
+        content = fhandle.read()
+        fhandle.close()
 
         new_len = len(content)
         new_md5 = md5.new(content).digest()
@@ -616,9 +577,9 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
         possible_files.reverse()
         for old_filename in possible_files:
             # read old content
-            f = open(old_filename, 'rb')
-            old_content = f.read()
-            f.close()
+            fhandle = open(old_filename, 'rb')
+            old_content = fhandle.read()
+            fhandle.close()
 
             if len(old_content) == new_len:
                 # get md5
@@ -642,8 +603,8 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
         if not os.path.exists(link_dest):
             try:
                 os.symlink(filename, link_dest)
-            except Exception, e:
-                Logger().error(e)
+            except Exception, err:
+                Logger().error(err)
 
     if OPT.daily_in_dir and not isinstance(OPT.daily_in_dir, bool):
         link_dest = os.path.join(
@@ -656,31 +617,31 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
         if not os.path.exists(link_dest):
             try:
                 os.symlink(filename, link_dest)
-            except Exception, e:
-                Logger().error(e)
+            except Exception, err:
+                Logger().error(err)
 
     return len(content)
 
 
 def backupUser(user_id, photos, backup_dir):
-    f = open(os.path.join(backup_dir, user_id), 'wb')
-    marshal.dump(photos, f)
-    f.close()
+    fhandle = open(os.path.join(backup_dir, user_id), 'wb')
+    marshal.dump(photos, fhandle)
+    fhandle.close()
 
 
 def restoreUser(user_id, backup_dir):
     filepath = os.path.join(backup_dir, user_id)
     if os.path.exists(filepath):
-        f = open(filepath, 'rb')
-        ret = marshal.load(f)
-        f.close()
+        fhandle = open(filepath, 'rb')
+        ret = marshal.load(fhandle)
+        fhandle.close()
     else:
         Logger().error("while restoring %s (file not found)" % user_id)
         return
     return ret
 
 
-def _mkdir_photoset(destination, retrieve):
+def _mkdir_photoset(destination):
     mkdir(os.path.dirname(destination))
     mkdir(destination)
 
@@ -697,23 +658,23 @@ def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name,
         # prepare the photo directory
         Logger().info("\n== prepare the photo directory")
         try:
-            _mkdir_photoset(destination, opt.retrieve)
-        except OSError, e:
+            _mkdir_photoset(destination)
+        except OSError, err:
             errors = {
                 28: "there is not enough space to continue, " \
                     "please delete some files and try again",
                 13: "you dont have the permissions to access %s" % \
                     destination,
             }
-            if e.errno in errors:
-                if waitFor(errors[e.errno]):
-                    _mkdir_photoset(destination, opt.retrieve)
+            if err.errno in errors:
+                if waitFor(errors[err.errno]):
+                    _mkdir_photoset(destination)
                 else:
                     raise
             else:
                 Logger().error("while doing stuffs in %s" % destination)
                 info = sys.exc_info()
-                Logger().error(str(e))
+                Logger().error(str(err))
                 Logger().print_tb(info[2])
                 raise
 
