@@ -3,8 +3,7 @@
 #import markup
 import cgi
 
-from flickr_download_helper.api import (getUserFromAll, initialisationFlickrApi,
-    getUserPhotos, getPhotoURLFlickr, searchPhotos, getContactsLatestPhotos)
+from flickr_download_helper.api import API
 from flickr_download_helper.config import OptConfigReader, OPT
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.existing import Existing
@@ -27,17 +26,17 @@ Logger().setup()
 ###########################
 
 # init of the flickr api
-api, token = initialisationFlickrApi(OPT)
+api = API()
 
 if user:
-    user = getUserFromAll(api, user)
+    user = api.getUserFromAll()
     page.h3(user['username'], onclick='alert("'+user['id']+'");')
     page.a('rss', href='rss.py?user_id=%s'%(user['id']),)
     page.br()
-    photos = getUserPhotos(api, token, user['id'])
+    photos = api.getUserPhotos(user['id'])
     existing = Existing().grepPhotosExists(photos)
     existing_ids = map(lambda e:e['id'], existing)
-    urls = getPhotoURLFlickr(api, token, photos, True, True)
+    urls = api.getPhotoURLFlickr(photos, True, True)
     for id in urls:
         if id in existing_ids:
             style = 'border:1px red solid;'
@@ -48,12 +47,12 @@ else:
     page.h3("showing last photos of your contacts")
 
 #     params = {"contacts":"ff", "min_upload_date":"1287399869", "extra":"url_sq"}
-#     photos = searchPhotos(api, token, params)
-    photos = getContactsLatestPhotos(api, token)
+#     photos = api.searchPhotos(params)
+    photos = api.getContactsLatestPhotos()
     p = {}
     for photo in photos:
         p[photo['id']] = photo['owner']
-    urls = getPhotoURLFlickr(api, token, photos, True, True)
+    urls = api.getPhotoURLFlickr(photos, True, True)
 
     for id in urls:
         page.img(src=urls[id], width=100, height=80, alt=id, onclick='alert("user: '+p[id]+'; image: '+id+'");')

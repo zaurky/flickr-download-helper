@@ -2,7 +2,7 @@ from flickr_download_helper.config import OPT
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.logger import Logger
 
-from flickr_download_helper.api import getUserFromAll, searchGroup
+from flickr_download_helper.api import API
 
 
 class UrlParser(object):
@@ -78,7 +78,8 @@ class UrlParser(object):
 
         return (FDHPR.ERROR)
 
-    def fill_opt(self, api, token):
+    def fill_opt(self):
+        flickr_api = API()
         Logger().info("\n== retrieve from URL")
         url = self.parse()
 
@@ -91,7 +92,7 @@ class UrlParser(object):
             pass
         elif url[0] == FDHPR.TAG:
             OPT.tags = (url[2])
-            user = getUserFromAll(api, OPT.url)
+            user = flickr_api.getUserFromAll(OPT.url)
             OPT.user_id = user['id']
             OPT.url = None
         elif url[0] == FDHPR.SET:
@@ -109,7 +110,7 @@ class UrlParser(object):
         elif url[0] == FDHPR.GROUP:
             Logger().error("Don't know how to get group")
         elif url[0] == FDHPR.INGROUP:
-            group = searchGroup(api, token, url[2])
+            group = flickr_api.searchGroup(url[2])
             OPT.group_id = group['id']
         elif url[0] == FDHPR.SEARCH:
             OPT.search = url[2]

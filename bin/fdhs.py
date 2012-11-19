@@ -13,15 +13,15 @@ import time
 import traceback
 from twisted.internet import reactor
 import flickr_download_helper
-from flickr_download_helper.api import getContactList, getStaticContactList, getUserGroups
+from flickr_download_helper.api import API, getStaticContactList
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.config import OPT, INS
 
 
-def getContactPhotos(api, token):
+def getContactPhotos():
     Logger().debug("Contact : %s" % OPT.user_id)
     try:
-        ret, count = flickr_download_helper.main(api, token)
+        ret, count = flickr_download_helper.main()
 
         if ret:
             if ret == 4:  # failed to find user, maybe next time!
@@ -51,7 +51,7 @@ def getContactPhotos(api, token):
     return True
 
 
-def getContactsPhotos(api, token):
+def getContactsPhotos(api):
     # get the list of favorites
     setattr(OPT, 'has_been_download', {})
     contacts = []
@@ -65,7 +65,7 @@ def getContactsPhotos(api, token):
         contacts = map(lambda nsid: {'nsid':nsid}, OPT.contact_ids)
         no_static_contacts = True
     else:
-        contacts = getContactList(api, token)
+        contacts = api.getContactList()
         # TODO should keep new added contacts
 
         if OPT.check_old_contacts:
@@ -97,7 +97,7 @@ def getContactsPhotos(api, token):
 
     if OPT.scan_groups:
         INS['put_group_in_session'] = True
-        groups = getUserGroups(api, token, OPT.my_id, page = 1)
+        groups = api.getUserGroups(OPT.my_id, page = 1)
 
         for i, group in enumerate(groups):
             if group['nsid'] in OPT.skiped_group:
@@ -111,7 +111,7 @@ def getContactsPhotos(api, token):
 
             for contacts_id in contacts_ids:
                 OPT.user_id = contacts_id
-                ret = getContactPhotos(api, token)
+                ret = getContactPhotos()
                 if not ret:
                     break
 
@@ -121,7 +121,7 @@ def getContactsPhotos(api, token):
     else:
         for contacts_id in contacts_ids:
             OPT.user_id = contacts_id
-            ret = getContactPhotos(api, token)
+            ret = getContactPhotos()
 
             if not ret and contacts_id not in static_ids:
                 break
@@ -144,7 +144,7 @@ def getContactsPhotos(api, token):
 
     if OPT.loop:
         OPT.since = int(time.time())
-        reactor.callLater(OPT.loop, getContactsPhotos, api, token)
+        reactor.callLater(OPT.loop, getContactsPhotos, api)
     else:
         reactor.stop()
         sys.exit(0)
@@ -152,13 +152,7 @@ def getContactsPhotos(api, token):
 
 if __name__ == "__main__":
     try:
-        r = flickr_download_helper.main_init()
-        if not isinstance(r, (list, tuple)):
-            if r == 6:
-                sys.exit(-4)
-            sys.exit(-5)
-
-        api, token = r
+        api = API()
         Logger().debug("#######################################")
 
     except:
@@ -190,5 +184,5 @@ if __name__ == "__main__":
     OPT.url = OPT.nick = OPT.photoset_id = OPT.collection_id = None
     OPT.photo_id_in_file = OPT.tags = OPT.username = OPT.daily_in_dir = True
 
-    reactor.callLater(1, getContactsPhotos, api, token)
+    reactor.callLater(1, getContactsPhotos, api)
     reactor.run()

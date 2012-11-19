@@ -3,11 +3,10 @@
 import pickle
 from datetime import datetime, timedelta
 from flickr_download_helper.config import OPT
-from flickr_download_helper import main_init
-from flickr_download_helper.api import getContactList, getUserPhotos
+from flickr_download_helper.api import API
 
-api, key = main_init(False)
-contacts = getContactList(api, key)
+api = API(False)
+contacts = api.getContactList()
 
 to_remove_30 = []
 to_remove_60 = []
@@ -15,7 +14,7 @@ to_remove_90 = []
 to_remove_180 = []
 
 def has_photos(nsid, delta):
-    return len(getUserPhotos(api, key, nsid,
+    return len(api.getUserPhotos(nsid,
         (datetime.now() - timedelta(days=delta)).strftime('%s'), limit=2)) != 0
 
 

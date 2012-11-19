@@ -1,6 +1,5 @@
 from flickr_download_helper.config import Singleton, OPT
-from flickr_download_helper.api import (getContactList, getUserFavorites,
-    initialisationFlickrApi)
+from flickr_download_helper.api import API
 import pickle
 import shutil
 import time
@@ -66,7 +65,7 @@ class FavoritesBackup(GenericBackup, Singleton):
 
         # load the list
         h_photos = {}
-        contacts = getContactList(self.api, self.token)
+        contacts = self.api.getContactList()
 
         for contact in contacts:
             user_id = contact['nsid']
@@ -76,7 +75,7 @@ class FavoritesBackup(GenericBackup, Singleton):
             else:
                 self.favorites[user_id] = [self.time, []]
 
-            photos = getUserFavorites(self.api, self.token, user_id,
+            photos = self.api.getUserFavorites(user_id,
                 min_fave_date=min_fave_date)
             self.favorites[user_id][0] = self.time
 
@@ -111,7 +110,7 @@ class FavoritesBackup(GenericBackup, Singleton):
         self.filename = OPT.favorites_file
         self.filtering_file = "%s.filter" % self.filename
 
-        self.api, self.token = initialisationFlickrApi(OPT)
+        self.api = API()
 
         # RESTORE FAVORITES
         obj = self.loadBackup(self.filename)

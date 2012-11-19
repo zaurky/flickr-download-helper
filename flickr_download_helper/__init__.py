@@ -78,7 +78,7 @@ def create_dir_env(user_name):
     return (user_name, destination)
 
 
-def get_photosets_photos(api, token, user_id, user_name, photosets, existing):
+def get_photosets_photos(user_id, user_name, photosets, existing):
     urls = {}
     infos = {}
     photo_id2destination = {}
@@ -86,9 +86,8 @@ def get_photosets_photos(api, token, user_id, user_name, photosets, existing):
 
     for photoset in photosets:
         Logger().info("\n== getting photoset %s" % photoset['title'])
-        l_urls, l_photo_id2destination, destination, l_infos = getPhotoset(
-            OPT, api, token, user_name, photoset['id'],
-            photoset['title'], user_id, existing)
+        l_urls, l_photo_id2destination, destination, l_infos = flickr_api.getPhotoset(
+            user_name, photoset['id'], photoset['title'], user_id, existing)
 
         urls = extends(urls, l_urls)
         photo_id2destination = extends(photo_id2destination, l_photo_id2destination)
@@ -102,6 +101,8 @@ def main(api, token):
     existing = None
     photo_id2destination = {}
     infos = {}
+
+    flickr_api = API()
 
     if not os.path.exists(OPT.photo_dir) and OPT.retrieve:
         Logger().error("You want to download the photos, " \
@@ -130,22 +131,21 @@ def main(api, token):
 
     if OPT.photoset_id:
         # work on a photoset
-        photoset = getPhotosetInfos(api, token, OPT.photoset_id)
+        photoset = flickr_api.getPhotosetInfos(OPT.photoset_id)
         photoset_name = photoset['title']
 
         Logger().info("\n== get user information")
         user_id = photoset['owner']
 
-        user = getUserFromID(api, user_id)
+        user = flickr_api.getUserFromID(user_id)
         user_name = user['username']
 
         Logger().warn("username = %s" % user_name)
 
         existing = Existing(user_id, user_name)
 
-        urls, photo_id2destination, destination, infos = getPhotoset(
-            OPT, api, token, user_name, OPT.photoset_id, photoset_name,
-            user_id, existing)
+        urls, photo_id2destination, destination, infos = flickr_api.getPhotoset(
+            user_name, OPT.photoset_id, photoset_name, user_id, existing)
 
     elif OPT.photo_ids:
         Logger().info("\n== retrieve photos informations")
@@ -153,7 +153,7 @@ def main(api, token):
         photo_id2username = {}
 
         for photo_id in OPT.photo_ids:
-            photo = getPhotoInfo(api, token, photo_id)
+            photo = flickr_api.getPhotoInfo(photo_id)
 
             if not photo:
                 Logger().warn("can't get photo %s" % photo_id)
@@ -172,11 +172,11 @@ def main(api, token):
                 photo_id2destination[photo_id] = destination
 
         Logger().info("\n== get all photos url")
-        urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+        urls = flickr_api.getPhotoURLFlickr(photos, OPT.fast_photo_url)
 
     else:
         # we work with user_id, so whatever is the input, now we want user_id
-        user = getUser(api, token)
+        user = flickr_api.getUser()
         if not user:
             Logger().error("can't find user")
             return (4, 0)
@@ -199,19 +199,19 @@ def main(api, token):
             Logger().info("\n== getting collection %s" % OPT.collection_id)
 
             OPT.sort_by_user = True
-            photosets = getCollectionPhotosets(api, token, OPT.collection_id, user_id)
+            photosets = flickr_api.getCollectionPhotosets(OPT.collection_id, user_id)
 
             urls, photo_id2destination, infos = get_photosets_photos(
-                api, token, user_id, user_name, photosets, existing)
+                user_id, user_name, photosets, existing)
 
         elif OPT.sort_by_photoset:
             Logger().info("\n== getting user (%s) photoset" % user_id)
 
             OPT.sort_by_user = True
-            photosets = getUserPhotosets(api, token, user_id)
+            photosets = flickr_api.getUserPhotosets(user_id)
 
             urls, photo_id2destination, infos = get_photosets_photos(
-                api, token, user_id, user_name, photosets, existing)
+                user_id, user_name, photosets, existing)
 
         elif OPT.try_from_groups or OPT.scan_groups:
             if OPT.group_id:
@@ -221,7 +221,7 @@ def main(api, token):
                     Logger().info("\n== trying to get users (%s) photos " \
                         "from groups" % user_id)
 
-                    groups = getUserGroups(api, token, user_id, page = 1)
+                    groups = flickr_api.getUserGroups(user_id, page = 1)
                 elif OPT.scan_groups:
                     Logger().info("\n== trying to get users (%s) photos " \
                         "from %s groups" % (user_id, OPT.my_id))
@@ -232,7 +232,7 @@ def main(api, token):
                     if isinstance(OPT.scan_groups, dict) and 'groups' in OPT.scan_groups:
                         groups = OPT.scan_groups['groups']
                     else:
-                        groups = getUserGroups(api, token, OPT.my_id, page=1)
+                        groups = flickr_api.getUserGroups(OPT.my_id, page=1)
                         OPT.scan_groups['groups'] = groups
 
             photos = []
@@ -249,7 +249,7 @@ def main(api, token):
                 if OPT.scan_groups:
                     kargs.pop('user_id')
 
-                l_photos = getGroupPhotos(api, token, group_id, **kargs)
+                l_photos = flickr_api.getGroupPhotos(group_id, **kargs)
 
                 if OPT.scan_groups or OPT.force_group_verbose:
                     for l_photo in l_photos:
@@ -265,16 +265,16 @@ def main(api, token):
 
             existing, photos, infos = filter_photos(
                 user_id, user_name, photos, existing)
-            urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+            urls = flickr_api.getPhotoURLFlickr(photos, OPT.fast_photo_url)
             user_name, destination = create_dir_env(user_name)
 
         elif OPT.tags:
             Logger().info("\n== getting photos in tag %s" % OPT.tags)
-            photos = getPhotosByTag(api, token, user_id, OPT.tags)
+            photos = flickr_api.ggetPhotosByTag(user_id, OPT.tags)
 
             existing, photos, infos = filter_photos(
                 user_id, user_name, photos, existing)
-            urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+            urls = flickr_api.getPhotoURLFlickr(photos, OPT.fast_photo_url)
             user_name, destination = create_dir_env(user_name)
 
             destination = os.path.join(destination, OPT.tags)
@@ -283,19 +283,19 @@ def main(api, token):
         elif OPT.group_id:
             Logger().info("\n== getting user %s files in group %s" % (
                 user_name, OPT.group_id))
-            photos = getGroupPhotos(
-                api, token, OPT.group_id, user_id=user_id, per_page=500)
+            photos = flickr_api.getGroupPhotos(
+                OPT.group_id, user_id=user_id, per_page=500)
 
             existing, photos, infos = filter_photos(
                 user_id, user_name, photos, existing)
-            urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+            urls = flickr_api.getPhotoURLFlickr(photos, OPT.fast_photo_url)
             user_name, destination = create_dir_env(user_name)
 
         elif OPT.search:
-            photos = searchPhotos(api, token, user_id, OPT.search)
+            photos = flickr_api.searchPhotos(user_id, OPT.search)
             existing, photos, infos = filter_photos(
                 user_id, user_name, photos, existing)
-            urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+            urls = flickr_api.getPhotoURLFlickr(photos, OPT.fast_photo_url)
             user_name, destination = create_dir_env(user_name)
 
         else:
@@ -310,13 +310,13 @@ def main(api, token):
             else:
                 Logger().info("\n== get the files'URL from flick API")
                 if OPT.since:
-                    photos = getUserPhotos(api, token, user_id, OPT.since)
+                    photos = flickr_api.getUserPhotos(user_id, OPT.since)
                 else:
-                    photos = getUserPhotos(api, token, user_id)
+                    photos = flickr_api.getUserPhotos(user_id)
 
                 existing, photos, infos = filter_photos(
                     user_id, user_name, photos, existing)
-                urls = getPhotoURLFlickr(api, token, photos, OPT.fast_photo_url)
+                urls = flickr_api.getPhotoURLFlickr(photos, OPT.fast_photo_url)
                 user_name, destination = create_dir_env(user_name)
 
                 # backuping what we are going to get
@@ -399,5 +399,5 @@ def main(api, token):
 def getRecentlyUploadedContacts():
     return list(set(map(lambda photo:
         photo['owner'],
-        getContactsLatestPhotos(api, token)
+        API().getContactsLatestPhotos()
     )))

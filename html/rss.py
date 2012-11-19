@@ -2,7 +2,7 @@
 
 from flickr_download_helper.config import OptConfigReader, OPT
 from flickr_download_helper.logger import Logger
-from flickr_download_helper import getUserFromAll, initialisationFlickrApi
+from flickr_download_helper.api import API
 
 from flickr_download_helper.html_widget import FDH_page
 import cgi
@@ -14,7 +14,7 @@ config.setup()
 Logger().setup()
 
 # init of the flickr api
-api, token = initialisationFlickrApi(OPT)
+api = API(False)
 
 ###########################################
 
@@ -24,7 +24,7 @@ if 'user_id' in form:
 else:
     user_id = '53753127@N03'
 
-user = getUserFromAll(api, user_id)
+user = api.getUserFromAll(user_id)
 username = user['username']
 
 page = FDH_page()

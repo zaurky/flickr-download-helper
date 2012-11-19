@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from flickr_download_helper.api import getContactList, initialisationFlickrApi, getUserFromID
+from flickr_download_helper.api import API
 from flickr_download_helper.config import OptConfigReader, OPT, OptReader
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.proxy import FDHProxySettings
@@ -23,7 +23,7 @@ proxy.setValues(OPT)
 proxy.activate()
 
 # init of the flickr api
-api, token = initialisationFlickrApi(OPT)
+api = API()
 
 
 def encode(string):
@@ -34,7 +34,7 @@ def encode(string):
 contact_id = OPT.user_id
 line = []
 
-c = getUserFromID(api, contact_id, True)
+c = api.getUserFromID(contact_id, True)
 
 if OPT.getContactFields:
     for field in OPT.getContactFields:
