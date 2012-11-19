@@ -352,6 +352,131 @@ class API(object):
 
         return content
 
+    def getUserPhotos(self, user_id, min_upload_date=None, page=1, limit=None):
+        per_page = DEFAULT_PERPAGE if not limit else limit
+
+        kargs = {
+            'page': page,
+            'per_page': per_page,
+            'user_id': user_id,
+            'content_type': 7,
+        }
+
+        if min_upload_date:
+            kargs['min_upload_date'] = min_upload_date
+
+        rsp_json = self.request('people.getPhotos', "%s's photos page %i",
+            [user_id, page], **kargs)
+        if not rsp_json: return []
+
+        content = rsp_json['photos']['photo']
+        total = int(rsp_json['photos']['total'])
+
+        if limit:
+            return content
+
+        if len(content) + (page - 1) * per_page != total:
+            content.extend(self.getUserPhotos(
+                user_id, min_upload_date, page + 1))
+
+        return content
+
+    def getPhotoURLFlickr(self, photos, fast_photo_url, thumb=False):
+        urls = {}
+        length = len(photos)
+
+        for (counter, photo) in enumerate(photos):
+            if thumb:
+                url = photo.get('url_sq')
+            elif not thumb:
+                url = photo.get('url_o', photo.get('url_l', photo.get('url_m')))
+
+            if not url:
+                Logger().info("%i/%i get photo size" % (counter + 1, length))
+
+                if fast_photo_url and photo.get('media', 'photo') == 'photo':
+                    url = getThumbURL(photo) if thumb else getPhotoURL(photo)
+                else:
+                    sizes = self.getPhotoSize(photo['id'])
+                    if not sizes:
+                        Logger().error("can't get photo size for %s (the photo " \
+                            "is not going to be retrieve)" % photo['id'])
+                        continue
+
+                    if thumb:
+                        url = selectSmallerPhotoSizeURL(sizes)
+                    else:
+                        if photo.get('media', 'photo') != 'photo':
+                            url = selectMediaURL(sizes, photo['media'])
+                            Logger().info("Get the video %s" % (url))
+                            DownloadFile().write("%s video %s" % (
+                                str(datetime.now()), url))
+                        elif 'video' in photo:
+                            Logger().info("Get the video %s" % (
+                                photo['urls']['url'][0]))
+                            url = selectBiggerPhotoSizeURL(sizes)
+                            DownloadFile().write("%s video %s" % (
+                                str(datetime.now()), url))
+                        else:
+                            url = selectBiggerPhotoSizeURL(sizes)
+
+            urls[photo['id']] = url
+
+        return urls
+
+    def getPhotoset(self, user_name, photoset_id, photoset_name, user_id,
+            existing=None):
+
+        photo_id2destination = {}
+        if not existing:
+            existing = Existing(user_id, user_name)
+
+        photoset_name = photoset_name.replace('/', '')
+        destination = os.path.join(OPT.photo_dir, user_name, photoset_name)
+
+        # prepare the photo directory
+        Logger().info("\n== prepare the photo directory")
+        try:
+            _mkdir_photoset(destination)
+        except OSError, err:
+            errors = {
+                28: "there is not enough space to continue, " \
+                    "please delete some files and try again",
+                13: "you dont have the permissions to access %s" % \
+                    destination,
+            }
+            if err.errno in errors:
+                if waitFor(errors[err.errno]):
+                    _mkdir_photoset(destination)
+                else:
+                    raise
+            else:
+                Logger().error("while doing stuffs in %s" % destination)
+                info = sys.exc_info()
+                Logger().error(str(err))
+                Logger().print_tb(info[2])
+                raise
+
+        photos = self.getPhotosetPhotos(photoset_id)
+        for photo in photos:
+            photo_id2destination[photo['id']] = destination
+
+        total = len(photos)
+
+        photos = existing.grepPhotosDontExists(photos)
+
+        total_after_filter = len(photos)
+
+        if total != total_after_filter:
+            Logger().info("filter %d photos" % (total - total_after_filter))
+
+        infos = dict([(photo['id'], photo) for photo in photos])
+
+        urls = self.getPhotoURLFlickr(photos, OPT.fast_photo_url)
+
+        return (urls, photo_id2destination, destination, infos)
+
+
 ####
 
 
@@ -467,79 +592,12 @@ def getGroupPhotos(_, _, group_id, page=1, user_id=None, per_page=None):
     return API().getGroupPhotos(group_id, page, user_id, per_page)
 
 
-def getUserPhotos(api, token, user_id, min_upload_date=None, page=1,
-        limit=None):
-    per_page = DEFAULT_PERPAGE if not limit else limit
-
-    kargs = {
-        'page': page,
-        'per_page': per_page,
-        'user_id': user_id,
-        'content_type': 7,
-    }
-
-    if min_upload_date:
-        kargs['min_upload_date'] = min_upload_date
-
-    rsp_json = Flickr().request('people.getPhotos',
-        "%s's photos page %i", [user_id, page], **kargs)
-    if not rsp_json: return []
-
-    content = rsp_json['photos']['photo']
-    total = int(rsp_json['photos']['total'])
-
-    if limit:
-        return content
-
-    if len(content) + (page - 1) * per_page != total:
-        content.extend(getUserPhotos(api, token, user_id, min_upload_date,
-            page + 1))
-
-    return content
+def getUserPhotos(_, _, user_id, min_upload_date=None, page=1, limit=None):
+    return API().getUserPhotos(user_id, min_upload_date, page, limit)
 
 
-def getPhotoURLFlickr(api, token, photos, fast_photo_url, thumb=False):
-    urls = {}
-    length = len(photos)
-
-    for (counter, photo) in enumerate(photos):
-        if thumb:
-            url = photo.get('url_sq')
-        elif not thumb:
-            url = photo.get('url_o', photo.get('url_l', photo.get('url_m')))
-
-        if not url:
-            Logger().info("%i/%i get photo size" % (counter + 1, length))
-
-            if fast_photo_url and photo.get('media', 'photo') == 'photo':
-                url = getThumbURL(photo) if thumb else getPhotoURL(photo)
-            else:
-                sizes = getPhotoSize(api, token, photo['id'])
-                if not sizes:
-                    Logger().error("can't get photo size for %s (the photo " \
-                        "is not going to be retrieve)" % photo['id'])
-                    continue
-
-                if thumb:
-                    url = selectSmallerPhotoSizeURL(sizes)
-                else:
-                    if photo.get('media', 'photo') != 'photo':
-                        url = selectMediaURL(sizes, photo['media'])
-                        Logger().info("Get the video %s" % (url))
-                        DownloadFile().write("%s video %s" % (
-                            str(datetime.now()), url))
-                    elif 'video' in photo:
-                        Logger().info("Get the video %s" % (
-                            photo['urls']['url'][0]))
-                        url = selectBiggerPhotoSizeURL(sizes)
-                        DownloadFile().write("%s video %s" % (
-                            str(datetime.now()), url))
-                    else:
-                        url = selectBiggerPhotoSizeURL(sizes)
-
-        urls[photo['id']] = url
-
-    return urls
+def getPhotoURLFlickr(_, _, photos, fast_photo_url, thumb=False):
+    return API().getPhotoURLFlickr(photos, fast_photo_url, thumb)
 
 
 def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
@@ -641,58 +699,10 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
     return len(content)
 
 
-def getPhotoset(opt, api, token, user_name, photoset_id, photoset_name,
+def getPhotoset(_, _, user_name, photoset_id, photoset_name,
             user_id, existing=None):
-        photo_id2destination = {}
-        if not existing:
-            existing = Existing(user_id, user_name)
-
-        photoset_name = photoset_name.replace('/', '')
-        destination = os.path.join(opt.photo_dir, user_name, photoset_name)
-
-        # prepare the photo directory
-        Logger().info("\n== prepare the photo directory")
-        try:
-            _mkdir_photoset(destination)
-        except OSError, err:
-            errors = {
-                28: "there is not enough space to continue, " \
-                    "please delete some files and try again",
-                13: "you dont have the permissions to access %s" % \
-                    destination,
-            }
-            if err.errno in errors:
-                if waitFor(errors[err.errno]):
-                    _mkdir_photoset(destination)
-                else:
-                    raise
-            else:
-                Logger().error("while doing stuffs in %s" % destination)
-                info = sys.exc_info()
-                Logger().error(str(err))
-                Logger().print_tb(info[2])
-                raise
-
-        photos = getPhotosetPhotos(api, token, photoset_id)
-        for photo in photos:
-            photo_id2destination[photo['id']] = destination
-
-        total = len(photos)
-
-        photos = existing.grepPhotosDontExists(photos)
-
-        total_after_filter = len(photos)
-
-        if total != total_after_filter:
-            Logger().info("filter %d photos" % (total - total_after_filter))
-
-        infos = {}
-        for photo in photos: infos[photo['id']] = photo
-
-        urls = getPhotoURLFlickr(api, token, photos, opt.fast_photo_url)
-
-        return (urls, photo_id2destination, destination, infos)
-
+    return API().getPhotoset(user_name, photoset_id, photoset_name, user_id,
+        existing)
 
 # keep them as functions
 def backupUser(user_id, photos, backup_dir):
