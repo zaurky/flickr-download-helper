@@ -325,13 +325,13 @@ class API(object):
         if len(l_photos) >= g_size:
             return _cache_group(group_id, l_photos)
 
-        ids = map(lambda x: x['id'], l_photos)
+        ids = [x['id'] for x in l_photos]
         for i in content:
             if i['id'] not in ids:
                 l_photos.append(i)
 
         # remove duplicates on id
-        l_photos = dict(map(lambda x: (x['id'], x), l_photos)).values()
+        l_photos = dict([(x['id'], x) for x in l_photos]).values()
 
         Logger().debug("getGroupPhotos %d %d %d" % (
             len(l_photos), g_size, len(content)))
