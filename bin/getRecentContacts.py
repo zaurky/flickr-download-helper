@@ -23,10 +23,7 @@ proxy = FDHProxySettings()
 proxy.setValues(OPT)
 proxy.activate()
 
-# init of the flickr api
-api, token = initialisationFlickrApi(OPT)
-
-owners = getRecentlyUploadedContacts(api, token)
+owners = getRecentlyUploadedContacts()
 
 print "\n".join(owners)
 

@@ -60,7 +60,7 @@ def getContactsPhotos(api, token):
     if OPT.smart:
         contacts = map(lambda nsid:
             {'nsid':nsid},
-            flickr_download_helper.getRecentlyUploadedContacts(api, token))
+            flickr_download_helper.getRecentlyUploadedContacts())
     elif len(OPT.contact_ids):
         contacts = map(lambda nsid: {'nsid':nsid}, OPT.contact_ids)
         no_static_contacts = True

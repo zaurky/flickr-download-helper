@@ -396,7 +396,7 @@ def main(api, token):
     return (0, total)
 
 
-def getRecentlyUploadedContacts(api, token):
+def getRecentlyUploadedContacts():
     return list(set(map(lambda photo:
         photo['owner'],
         getContactsLatestPhotos(api, token)
