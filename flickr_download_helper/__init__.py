@@ -14,6 +14,7 @@ import time
 from datetime import datetime
 
 from flickr_download_helper.api import *
+from flickr_download_helper.flickr import API as Flickr
 from flickr_download_helper.url_parser import UrlParser
 from flickr_download_helper.types import FDHPR
 from flickr_download_helper.utils import extends, mkdir
@@ -25,7 +26,7 @@ from flickr_download_helper.downloads_file import DownloadFile
 
 
 def main_init(read_command_line=True):
-    api = API(read_command_line)
+    api = Flickr(read_command_line)
     return (api.api, api.token)
 
 
