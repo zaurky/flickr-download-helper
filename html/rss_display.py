@@ -1,4 +1,4 @@
-#!/usr/bin/python
+DEPRECATED ! #!/usr/bin/python
 
 from flickr_download_helper.config import OptConfigReader, OPT
 from flickr_download_helper.logger import Logger
