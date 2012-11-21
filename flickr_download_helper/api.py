@@ -112,6 +112,7 @@ class API(object):
         path.reverse()
         page = kargs.pop('page', 1)
 
+        # FIXME page are limited to 500
         while page < 500:
             kargs['page'] = page
             rsp_json = func(*attr, **kargs)
@@ -242,7 +243,7 @@ class API(object):
             Logger().error("while looking up for user %s (%s)" % (
                 nick, e.message))
 
-    def getUserFromAll(api, u_string):
+    def getUserFromAll(self, u_string):
         for func in (
                     getUserFromUrl, getUserFromNick,
                     getUserFromUsername, getUserFromID,
@@ -477,129 +478,7 @@ class API(object):
         return (urls, photo_id2destination, destination, infos)
 
 
-####
-
-
-def getPhotoInfo(_, _, photo_id):
-    return API().getPhotoInfo(photo_id)
-
-
-def getPhotosetInfos(_, _, photoset_id):
-    return API().getPhotosetInfos(photoset_id)
-
-
-def getCollectionInfo(_, _, collection_id):
-    return API().getCollectionInfo(collection_id)
-
-
-def getUserFromID(_, user_id, sign=False):
-    return API().getUserFromID(user_id, sign)
-
-
-def getUserFromUsername(_, user_name):
-    return API().getUserFromUsername(user_name)
-
-
-def searchGroupByUrl(_, _, group_url):
-    return API().searchGroupByUrl(group_url)
-
-
-def getPhotoExif(_, _, photo_id):
-    return API().getPhotoExif(photo_id)
-
-
-def getPhotoSize(_, _, photo_id):
-    return API().getPhotoSize(photo_id)
-
-
-def getUserGroups(_, _, user_id, page=1):
-    return API().getUserGroups(user_id, page)
-
-
-def countGroupPhotos(_, _, group_id):
-    return API().countGroupPhotos(group_id)
-
-
-def getUserPhotosets(_, _, user_id):
-    return API().getUserPhotosets(user_id)
-
-
-def getContactsLatestPhotos(_, _, page=1):
-    return API().getContactsLatestPhotos(page)
-
-
-def getCollectionPhotosets(_, _, collection_id, user_id):
-    return API().getCollectionPhotosets(collection_id, user_id)
-
-
-def getPhotosetPhotos(_, _, photoset_id, page=1):
-    return API().getPhotosetPhotos(photoset_id, page)
-
-
-def getUserLastPhotos(_, _, user_id, since, page=1):
-    return API().getUserLastPhotos(user_id, since, page)
-
-
-def getPhotosByTag(_, _, user_id, tags, page=1):
-    return API().getPhotosByTag(user_id, tags, page)
-
-
-def searchPhotos(_, _, user_id, search, page=1):
-    return API().searchPhotos(user_id, search, page)
-
-
-def getContactList(_, _, page=1):
-    return API().getContactList(page)
-
-
-def getUserFavorites(_, _, user_id, page=1, one_shot=False,
-        per_page=DEFAULT_PERPAGE, min_fave_date=None):
-    return API().getUserFavorites(user_id, page, one_shot, per_page,
-        min_fave_date)
-
-
-def getGroupPhotosFromScratch(_, _, group_id, batch=0, page_in_batch=100,
-        per_page=500):
-    return API().getGroupPhotosFromScratch(group_id, batch, page_in_batch, per_page)
-
-
-def groupFromScratch(_, _, group_id):
-    return API().groupFromScratch(group_id)
-
-def searchGroup(_, _, group_name):
-    return API().searchGroupByUrl(group_name)
-
-
-def getUserFromUrl(_, url):
-    return API().getUserFromUrl(url)
-
-
-def getUserFromNick(_, nick):
-    return API().getUserFromNick(nick)
-
-
-def getUserFromAll(_, u_string):
-    return API().getUserFromAll(u_string)
-
-
-def getUser(_, _):
-    return API().getUser()
-
-
-
-### TODO integrate that in API class
-def getGroupPhotos(_, _, group_id, page=1, user_id=None, per_page=None):
-    return API().getGroupPhotos(group_id, page, user_id, per_page)
-
-
-def getUserPhotos(_, _, user_id, min_upload_date=None, page=1, limit=None):
-    return API().getUserPhotos(user_id, min_upload_date, page, limit)
-
-
-def getPhotoURLFlickr(_, _, photos, fast_photo_url, thumb=False):
-    return API().getPhotoURLFlickr(photos, fast_photo_url, thumb)
-
-
+#########################
 def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
         info=None):
 
@@ -698,11 +577,6 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
 
     return len(content)
 
-
-def getPhotoset(_, _, user_name, photoset_id, photoset_name,
-            user_id, existing=None):
-    return API().getPhotoset(user_name, photoset_id, photoset_name, user_id,
-        existing)
 
 # keep them as functions
 def backupUser(user_id, photos, backup_dir):
