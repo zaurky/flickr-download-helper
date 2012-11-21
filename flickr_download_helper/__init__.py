@@ -96,7 +96,7 @@ def get_photosets_photos(user_id, user_name, photosets, existing):
     return (urls, photo_id2destination, infos)
 
 
-def main(api, token):
+def main():
     user_name = None
     existing = None
     photo_id2destination = {}
@@ -122,7 +122,7 @@ def main(api, token):
         mkdir(OPT.daily_in_dir)
 
     if OPT.get_url:
-        UrlParser(OPT.get_url).fill_opt(api, token)
+        UrlParser(OPT.get_url).fill_opt()
 
     if OPT.photo_id_in_file:
         # work on a list of photos ids

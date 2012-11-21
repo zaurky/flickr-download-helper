@@ -16,8 +16,7 @@ from flickr_download_helper.config import OPT
 
 if __name__ == "__main__":
     try:
-        api, token = flickr_download_helper.main_init()
-        ret, num = flickr_download_helper.main(api, token)
+        ret, num = flickr_download_helper.main()
         sys.exit(ret)
     except:
         info = sys.exc_info()
