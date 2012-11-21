@@ -3,7 +3,6 @@
 from flickr_download_helper.config import OptConfigReader, OPT
 from flickr_download_helper.logger import Logger
 from flickr_download_helper.proxy import FDHProxySettings
-# from flickr_download_helper.api import initialisationFlickrApi # , getContactList, getUserFavorites
 from flickr_download_helper.api import initialisationFlickrApi, downloadPhotoFromURL
 # from flickr_download_helper.backup import FavoritesBackup
 # from flickr_download_helper.web_api import PhotoManager, PF
