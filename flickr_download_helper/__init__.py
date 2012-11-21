@@ -83,6 +83,7 @@ def get_photosets_photos(user_id, user_name, photosets, existing):
     infos = {}
     photo_id2destination = {}
     destination = ""
+    flickr_api = API()
 
     for photoset in photosets:
         Logger().info("\n== getting photoset %s" % photoset['title'])
@@ -270,7 +271,7 @@ def main():
 
         elif OPT.tags:
             Logger().info("\n== getting photos in tag %s" % OPT.tags)
-            photos = flickr_api.ggetPhotosByTag(user_id, OPT.tags)
+            photos = flickr_api.getPhotosByTag(user_id, OPT.tags)
 
             existing, photos, infos = filter_photos(
                 user_id, user_name, photos, existing)
