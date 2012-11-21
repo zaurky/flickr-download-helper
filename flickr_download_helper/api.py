@@ -245,8 +245,8 @@ class API(object):
 
     def getUserFromAll(self, u_string):
         for func in (
-                    getUserFromUrl, getUserFromNick,
-                    getUserFromUsername, getUserFromID,
+                    'getUserFromUrl', 'getUserFromNick',
+                    'getUserFromUsername', 'getUserFromID',
                 ):
             user = getattr(self, func)(u_string)
             if user: return user
