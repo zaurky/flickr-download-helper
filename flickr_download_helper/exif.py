@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-from flickr_download_helper.api import API
 from flickr_download_helper.logger import Logger
 import pyexiv2
 import os
@@ -81,6 +80,7 @@ def putGeneralInfo(api, token, photo_id, metadata, info = None):
         return metadata
 
     if not info:
+        from flickr_download_helper.api import API
         info = API().getPhotoInfo(photo_id)
 
     if not info:
