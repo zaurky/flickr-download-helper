@@ -6,9 +6,11 @@ import os
 
 attr = sys.argv[1]
 if not os.path.exists(attr):
-    print "file %s don't exists"%(attr)
+    print "file %s don't exists" % (attr)
+
 if not os.path.isfile(attr):
-    print "%s is not a file"%(attr)
+    print "%s is not a file" % (attr)
+
 ret = getGeneralInfo(attr)
 
 print "User Comment "
