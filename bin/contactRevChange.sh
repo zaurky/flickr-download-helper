@@ -25,6 +25,11 @@ if [ "x$DISABLE" == "x" ]; then
         rm -f "$LOCKFILE"
         exit
     fi
+
+    if [ ! -s $FDHPATH/files/contacts_rev.old ]; then
+        rm -f "$LOCKFILE"
+        exit
+    fi
     
     diff $FDHPATH/files/contacts_rev.old $FDHPATH/files/contacts_rev.new | grep ' ' > $FDHPATH/files/contacts_rev.diff
     LENGTH=`wc -l $FDHPATH/files/contacts_rev.diff | awk '{print $1}'`
