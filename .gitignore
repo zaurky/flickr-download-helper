@@ -5,3 +5,9 @@ files
 bin/id
 bin/images*
 bin/photoset
+bin/send_distant_mail.sh
+cron_scripts/clean_logs
+cron_scripts/rsync_id_cache
+cron_scripts/sync_files
+html/markup-1.7/
+sql/
