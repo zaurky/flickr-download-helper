@@ -182,7 +182,8 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     OPT.url = OPT.nick = OPT.photoset_id = OPT.collection_id = None
-    OPT.photo_id_in_file = OPT.tags = OPT.username = OPT.daily_in_dir = True
+    OPT.tags = OPT.username = OPT.photo_id_in_file = None
+    OPT.daily_in_dir = True
 
     reactor.callLater(1, getContactsPhotos, api)
     reactor.run()
