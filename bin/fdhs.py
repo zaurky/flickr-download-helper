@@ -11,7 +11,6 @@ To have the description of the parameters, please read flickr_download_helper.co
 import sys
 import time
 import traceback
-from twisted.internet import reactor
 import flickr_download_helper
 from flickr_download_helper.api import API, getStaticContactList
 from flickr_download_helper.logger import Logger
@@ -51,7 +50,10 @@ def getContactPhotos():
     return True
 
 
-def getContactsPhotos(api):
+def getContactsPhotos():
+    api = API()
+    Logger().debug("#######################################")
+
     # get the list of favorites
     setattr(OPT, 'has_been_download', {})
     contacts = []
@@ -142,48 +144,10 @@ def getContactsPhotos(api):
 
     Logger().debug("#######################################")
 
-    if OPT.loop:
-        OPT.since = int(time.time())
-        reactor.callLater(OPT.loop, getContactsPhotos, api)
-    else:
-        reactor.stop()
-        sys.exit(0)
-
 
 if __name__ == "__main__":
-    try:
-        api = API()
-        Logger().debug("#######################################")
-
-    except:
-        info = sys.exc_info()
-
-        if OPT.debug:
-            try:
-                Logger().error(info[1])
-                Logger().print_tb(info[2])
-            except:
-                try:
-                    print info
-                    print info[1]
-                    traceback.print_tb(info[2])
-                except:
-                    sys.exit(-2)
-        else:
-            try:
-                Logger().error(info[1])
-            except:
-                try:
-                    print info[1]
-                    traceback.print_tb(info[2])
-                except:
-                    sys.exit(-3)
-
-        sys.exit(-1)
-
     OPT.url = OPT.nick = OPT.photoset_id = OPT.collection_id = None
     OPT.tags = OPT.username = OPT.photo_id_in_file = None
     OPT.daily_in_dir = True
 
-    reactor.callLater(1, getContactsPhotos, api)
-    reactor.run()
+    getContactsPhotos()
