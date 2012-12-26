@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from jabberbot import JabberBot, botcmd
 import datetime
 import threading
