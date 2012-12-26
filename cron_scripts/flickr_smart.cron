@@ -14,7 +14,7 @@ if [ -f "$LOCKFILE" ]; then
 fi
 touch "$LOCKFILE"
 
-OPTIONS=" -d -r --smart --since last1h"
+OPTIONS=" -d -r --smart --since last1h --dw"
 TAG=`date +%s`
 
 if [ "x$DISABLE" == "x" ] && [ -d "$FLICKRPHOTODIR" ]; then
