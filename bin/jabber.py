@@ -7,6 +7,7 @@ import time
 import sys, time
 import re
 import os
+import signal
 import yaml
 
 from flickr_download_helper.config import OptConfigReader, OPT
@@ -35,17 +36,17 @@ class LogJabberBot(JabberBot):
         self.day = datetime.datetime.now().strftime('%Y%m%d')
 
         if self.last_log_file is None:
-            self.log('you must specify jabber_last in the conf file')
+            self._log('you must specify jabber_last in the conf file')
             sys.exit(2)
 
         self._file = open(self.downloads_file, 'rb')
         if os.path.exists(self.last_log_file):
-            self.log('getting last log date from %s'%self.last_log_file)
+            self._log('getting last log date from %s'%self.last_log_file)
             f = open(self.last_log_file, 'rb')
             l = f.readlines()
             f.close()
             if len(l) > 0:
-                self.log('#%s#'%l[-1].strip())
+                self._log('#%s#'%l[-1].strip())
                 self._start_at = datetime.datetime.strptime(l[-1].strip(), '%Y-%m-%d %H:%M:%S')
 
     def idle_proc( self):
@@ -53,7 +54,7 @@ class LogJabberBot(JabberBot):
             return
 
         if self._pause:
-            self.log('I am in pause')
+            self._log('I am in pause')
             return False
 
         # copy the message queue, then empty it
@@ -71,11 +72,11 @@ class LogJabberBot(JabberBot):
                         timestamp.strftime('%m%d %H:%M'),
                         message
                     )
-                self.log('sending "%s".' % (message))
+                self._log('sending "%s".' % (message))
                 self.send(self._to_user, message)
                 time.sleep(1)
             else:
-                self.log('not sending "%s" (ll %s)'%(message, level))
+                self._log('not sending "%s" (ll %s)'%(message, level))
 
     def can_send(self, m):
         if m is not None:
@@ -114,36 +115,36 @@ class LogJabberBot(JabberBot):
                 time.sleep(1)
             self.finish()
         except Exception, e:
-            self.log(e)
+            self._log(e)
             return
 
     def finish(self):
-        self.log("thread killed")
+        self._log("thread killed")
         if self.last_log is not None:
-            self.log("writing last date in %s"%self.last_log_file)
+            self._log("writing last date in %s"%self.last_log_file)
             # put self.last_log somewhere I can read it at next start!
             f = open(self.last_log_file, 'w')
             f.write(self.last_log.strftime('%Y-%m-%d %H:%M:%S'))
             f.close()
-        self.log("closing log file")
+        self._log("closing log file")
         self._file.close()
         sys.exit()
 
-    def log(self, s):
+    def _log(self, s):
         print self.__class__.__name__, datetime.datetime.now().strftime('%H:%M'), ':', s
 
     @botcmd
     def level(self, mess, args = ''):
         level = str(args)
         if args == '':
-            self.log('log level = %s'%(level))
+            self._log('log level = %s'%(level))
             return
         if level not in self.possible_levels:
-            self.log('log level %s invalid'%(level))
+            self._log('log level %s invalid'%(level))
             self.send(self._to_user, 'log level %s invalid'%(level))
             self.send(self._to_user, 'should be one of %s'%', '.join(self.possible_levels))
             return
-        self.log('setting log level to %s'%(level))
+        self._log('setting log level to %s'%(level))
         self.log_level = level
 
     @botcmd
@@ -152,7 +153,7 @@ class LogJabberBot(JabberBot):
 
     @botcmd
     def reload(self, mess='', args=''):
-        self.log('reload was asked')
+        self._log('reload was asked')
         self._file.close()
         self._file = open(self.downloads_file, 'rb')
 
@@ -172,13 +173,13 @@ class LogJabberBot(JabberBot):
     @botcmd
     def pause(self, mess, args):
         self.send(self._to_user, 'pausing')
-        self.log('pausing')
+        self._log('pausing')
         self._pause = True
 
     @botcmd
     def wake(self, mess, args):
         self.send(self._to_user, 'waking up')
-        self.log('waking up')
+        self._log('waking up')
         self.reload()
         self._pause = False
 
@@ -207,6 +208,18 @@ class LogJabberBot(JabberBot):
         self.send(self._to_user, 'display date %s'%self.display_date)
         self.send(self._to_user, 'pause %s'%self._pause)
         self.send(self._to_user, 'log level %s'%self.log_level)
+
+    @botcmd
+    def kill(self, mess, args):
+        self._log('will kill %s' % args)
+        os.kill(args, signal.SIGKILL)
+
+    @botcmd
+    def pgrep(self, mess, args):
+        command_line = 'ps -eo pid,lstart,cmd | grep py | grep -v grep | grep -v jabber'
+        for line in os.popen(command_line).readlines():
+            self.send(self._to_user, line.strip())
+            self.send(self._to_user, '')
 
 
 f = open('/etc/fdh/jabber.yaml')
