@@ -238,7 +238,7 @@ class API(object):
 
     def getUserFromNick(self, nick):
         try:
-            return getUserFromUrl(getUserURL(nick))
+            return self.getUserFromUrl(getUserURL(nick))
         except Exception, e:
             Logger().error("while looking up for user %s (%s)" % (
                 nick, e.message))
