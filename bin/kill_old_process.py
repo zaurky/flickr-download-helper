@@ -5,7 +5,7 @@ import signal
 from datetime import datetime, timedelta
 
 
-command_line = 'ps -eo pid,lstart,cmd | grep py | grep -v grep'
+command_line = 'ps -eo pid,lstart,cmd | grep py | grep -v grep | grep -v jabber'
 fd = os.popen(command_line)
 
 
@@ -26,5 +26,5 @@ for line in [line.strip() for line in fd.readlines()]:
         os.kill(pid, signal.SIGKILL)
         continue
 
-    if delta.seconds > 7200:
+    if 3600*24 * delta.days + delta.seconds > 7200:
         print "%s running for %ss" % (pid, delta.seconds)
