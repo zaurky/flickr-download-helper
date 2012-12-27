@@ -60,11 +60,10 @@ def getContactsPhotos():
     no_static_contacts = False
 
     if OPT.smart:
-        contacts = map(lambda nsid:
-            {'nsid':nsid},
-            flickr_download_helper.getRecentlyUploadedContacts())
+        contacts = [{'nsid': nsid} for nsid in \
+            flickr_download_helper.getRecentlyUploadedContacts()]
     elif len(OPT.contact_ids):
-        contacts = map(lambda nsid: {'nsid':nsid}, OPT.contact_ids)
+        contacts = [{'nsid': nsid} for nsid in OPT.contact_ids]
         no_static_contacts = True
     else:
         contacts = api.getContactList()
@@ -76,11 +75,11 @@ def getContactsPhotos():
             to_remove = pickle.load(f)
             f.close()
 
-            contacts = map(lambda c: c['nsid'], contacts)
+            contacts = [contact['nsid'] for contact in contacts]
             contacts = list(set(contacts) - set(to_remove))
-            contacts = map(lambda c: {'nsid': c}, contacts)
+            contacts = [{'nsid': nsid} for nsid in contacts]
 
-    print len(contacts)
+    Logger().info("will look at %d contacts" % len(contacts))
     INS['failure_level'] = 10
 
     static_ids = []
