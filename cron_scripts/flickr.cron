@@ -10,6 +10,7 @@ if [ -f "$LOCKFILE" ]; then
         # if the lock is less than 4 hours old
         exit
     fi
+    rm -f "$LOCKFILE"
     killall -9 flickr.cron
 fi
 touch "$LOCKFILE"
