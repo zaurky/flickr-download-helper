@@ -43,9 +43,7 @@ def contains(metadata, key):
             return metadata[key]
         return None
     else: # is image
-        if key in metadata.exifKeys():
-            return metadata[key]
-        return None
+        return metadata.get(key)
 
 def getMetadata(filename):
     try:
