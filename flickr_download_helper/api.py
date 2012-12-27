@@ -516,7 +516,7 @@ def downloadPhotoFromURL(url, filename, existing=None, check_exists=False,
 
     if info:
         try:
-            exif.fillFile(None, None, filename, info=info)
+            exif.fillFile(filename, info=info)
         except Exception, err:
             Logger().warn("Failed to put exif")
             Logger().warn(err)

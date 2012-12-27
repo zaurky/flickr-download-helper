@@ -6,10 +6,6 @@ import os
 import re
 
 class fillDir(object):
-    def __init__(self, api, token):
-        self.api = api
-        self.token = token
-
     def fillDir(self, args, dirname, names):
         total_count = len(names)
         count = 1
@@ -18,9 +14,9 @@ class fillDir(object):
             filename = os.path.join(dirname, name)
 
             if os.path.isdir(filename):
-                os.path.walk(filename, self.fillDir, [self.api, self.token])
+                os.path.walk(filename, self.fillDir, [])
             elif os.path.isfile(filename):
-                fillFile(self.api, self.token, filename, count, total_count)
+                fillFile(filename, count, total_count)
 
             count += 1
 
@@ -70,7 +66,7 @@ def getGeneralInfo(filename):
 
     return ret
 
-def putGeneralInfo(api, token, photo_id, metadata, info = None):
+def putGeneralInfo(photo_id, metadata, info = None):
     owner = contains(metadata, 'Exif.Image.Artist')
     comment = contains(metadata, 'Exif.Photo.UserComment')
     if owner and comment:
@@ -79,7 +75,7 @@ def putGeneralInfo(api, token, photo_id, metadata, info = None):
 
     if not info:
         from flickr_download_helper.api import API
-        info = API().getPhotoInfo(photo_id)
+        info = API(False).getPhotoInfo(photo_id)
 
     if not info:
         Logger().warn("Couldn't get info for photo %s" % (photo_id))
@@ -113,7 +109,7 @@ def putGeneralInfo(api, token, photo_id, metadata, info = None):
 
     return metadata
 
-def fillFile(api, token, file_path, count=None, total_count=None, info=None):
+def fillFile(file_path, count=None, total_count=None, info=None):
     filename = os.path.basename(file_path)
     tmp = filename.split('_')
     i = 0
@@ -128,12 +124,8 @@ def fillFile(api, token, file_path, count=None, total_count=None, info=None):
 
     try:
         metadata = getMetadata(file_path)
-        metadata = putGeneralInfo(api, token, photoid, metadata, info)
-
-        if isinstance(metadata, dict):
-            metadata.write()
-        else:
-            metadata.writeMetadata()
+        metadata = putGeneralInfo(photoid, metadata, info)
+        metadata.write()
 
     except IOError:
         Logger().warn("Can't read file %s"%(file_path))
