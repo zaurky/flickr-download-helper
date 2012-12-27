@@ -88,6 +88,7 @@ def getContactsPhotos():
         contacts_ids = getStaticContactList()
         static_ids = list(contacts_ids)
         Logger().info("static contacts %s" % (str(contacts_ids)))
+        INS['failure_level'] += len(contacts_ids)
 
     for c in contacts:
         if OPT.only_collect:
