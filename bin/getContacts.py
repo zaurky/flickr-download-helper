@@ -6,24 +6,8 @@ from flickr_download_helper.logger import Logger
 from flickr_download_helper.proxy import FDHProxySettings
 import os
 
-config = OptConfigReader()
-config.setup()
-
-opt = OptReader()
-ret = opt.read('getContacts.py')
-
-
-## start the logger
-Logger().setup()
-Logger().warn("#############################################################")
-Logger().warn("Getting contacts (running as %s)"%(os.getpid()))
-
-proxy = FDHProxySettings()
-proxy.setValues(OPT)
-proxy.activate()
-
 # init of the flickr api
-api = API()
+api = API(False)
 
 
 def encode(string):
@@ -31,7 +15,9 @@ def encode(string):
     try: return string.encode('latin1')
     except: return string.encode('utf8')
 
+
 contacts = api.getContactList()
+
 
 if OPT.check_old_contacts:
     import pickle

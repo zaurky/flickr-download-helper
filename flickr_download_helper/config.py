@@ -263,7 +263,7 @@ class OptReader(Singleton):
     --acf --advContactFields        if the fields are not in the getList function but in the getInfo one
 
     """
-    def read(self, script=''):
+    def read(self, read_command_line=True):
         opt = Options()
         try:
             opts, args = getopt.getopt(sys.argv[1:], "hdfrwi:u:n:p:s:l:c:t:g:",
@@ -286,12 +286,13 @@ class OptReader(Singleton):
                         "search=",
                     ])
         except getopt.error, msg:
+            print msg
             print self.__doc__
             print "for help use --help"
             return 2
 
         # process options
-        if script != 'getContacts.py':
+        if read_command_line:
             print "\n== process options"
             if not opts:
                 print self.__doc__
@@ -356,12 +357,13 @@ class OptReader(Singleton):
             elif o in ("--acf", "--advContactFields"): opt.advContactFields = True
             elif o in ("--search"): opt.search = a
             else:
+                print "unknown params %s" % o
                 print self.__doc__
                 return 2
 
         if opt.debug: print "switch to debug mode"
         if not opt.photo_id_in_file and opt.sort_by_user: opt.sort_by_user = False
-        if script != 'getContacts.py':
+        if read_command_line:
             if opt.collection_id and not opt.user_id and not opt.url and not opt.nick and not opt.username:
                 print "collection_id requires a user!"
                 return 2

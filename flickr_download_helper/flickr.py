@@ -20,11 +20,10 @@ class API(object):
         config = OptConfigReader()
         config.setup()
 
-        if read_command_line:
-            opt = OptReader()
-            ret = opt.read()
-            if ret:
-                return ret
+        opt = OptReader()
+        ret = opt.read(read_command_line)
+        if read_command_line and ret:
+            return ret
 
         Logger().setup()
         Logger().warn("##########################################################")
