@@ -31,7 +31,8 @@ if [ "x$DISABLE" == "x" ]; then
         exit
     fi
     
-    diff $FDHPATH/files/contacts_rev.old $FDHPATH/files/contacts_rev.new | grep -v 'logging as' | grep ' ' > $FDHPATH/files/contacts_rev.diff
+    diff $FDHPATH/files/contacts_rev.old $FDHPATH/files/contacts_rev.new \
+        | egrep -v '(logging as|process options)' | grep ' ' > $FDHPATH/files/contacts_rev.diff
     LENGTH=`wc -l $FDHPATH/files/contacts_rev.diff | awk '{print $1}'`
     while [ $LENGTH -gt 30 ]; do
         create_new
