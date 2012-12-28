@@ -13,9 +13,14 @@ to_remove_60 = []
 to_remove_90 = []
 to_remove_180 = []
 
+now = datetime.now()
+deltas = {}
+for delta in (30, 60, 90, 180):
+    deltas[delta] = (now - timedelta(days=delta)).strftime('%s')
+
+
 def has_photos(nsid, delta):
-    return len(api.getUserPhotos(nsid,
-        (datetime.now() - timedelta(days=delta)).strftime('%s'), limit=2)) != 0
+    return len(api.getUserPhotos(nsid, deltas[delta], limit=2)) != 0
 
 
 for c in contacts:
