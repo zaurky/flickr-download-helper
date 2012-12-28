@@ -34,9 +34,10 @@ for contact in [contact['nsid'] for contact in contacts]:
             to_remove.setdefault(delta, []).append(contact)
             break
 
-
+remove = []
 for delta in (180, 90, 60, 30):
     filename = getattr(OPT, 'contact_to_remove_%s' % delta)
     f = open(filename, 'wb')
-    pickle.dump(to_remove[delta], f)
+    remove.extend(to_remove[delta])
+    pickle.dump(remove, f)
     f.close()
