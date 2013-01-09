@@ -11,6 +11,7 @@ fd = os.popen(command_line)
 
 for line in [line.strip() for line in fd.readlines()]:
     a_line = line.split(' ')
+    a_line.remove('')
     a_line.reverse()
 
     pid = a_line.pop()
@@ -27,4 +28,4 @@ for line in [line.strip() for line in fd.readlines()]:
         continue
 
     if 3600*24 * delta.days + delta.seconds > 7200:
-        print "%s running for %ss" % (pid, delta.seconds)
+        print "%s running for %ss" % (pid, 3600*24 * delta.days + delta.seconds)
