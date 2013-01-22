@@ -170,7 +170,7 @@ def main():
             for photo_id in photo_id2username:
                 user_name = photo_id2username[photo_id]
                 destination = create_dir_env(user_name)
-                photo_id2destination[photo_id] = destination
+                photo_id2destination[photo_id] = destination[1]
 
         Logger().info("\n== get all photos url")
         urls = flickr_api.getPhotoURLFlickr(photos, OPT.fast_photo_url)
