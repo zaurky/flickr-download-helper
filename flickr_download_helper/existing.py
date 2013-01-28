@@ -5,6 +5,7 @@ import pickle
 import shutil
 import os, errno
 
+
 def mkdir_p(path):
     try:
         os.makedirs(path)
@@ -19,39 +20,48 @@ def file_load(path):
         f = open(path, 'rb')
         content = pickle.load(f)
         f.close()
-    except Exception, e:
-        print e
+    except Exception, exc:
+        print exc
         content = None
     return content
 
+
 def file_dump(path, content):
     if os.path.exists(path):
-        shutil.move(path, "%s.bkp"%(path))
+        shutil.move(path, "%s.bkp" % path)
+
     f = open(path, 'wb')
     pickle.dump(content, f)
     f.close()
 
+
 class FileWrite(Singleton):
-    def write(self, filename, content, existing = None):
+    def write(self, filename, content, existing=None):
         try:
             dirname = os.path.dirname(filename)
-            if not os.path.exists(dirname): mkdir_p(dirname)
+            if not os.path.exists(dirname):
+                mkdir_p(dirname)
+
             f = open(filename, 'wb')
             f.write(content)
             f.close()
-            if existing != None:
+
+            if existing is not None:
                 existing.addFile(filename)
-        except OSError, e:
-            if e.errno == 28:
-                ret = waitFor("there is not enough space to continue, please delete some files and try again")
+
+        except OSError, exc:
+            if exc.errno == 28:
+                ret = waitFor("there is not enough space to continue, " \
+                    "please delete some files and try again")
+
                 if ret:
                     f = open(filename, 'wb')
                     f.write(content)
                     f.close()
                 else:
-                    raise e
+                    raise
             else:
-                raise e
+                raise
 
 
 class Existing():
@@ -68,65 +78,79 @@ class Existing():
 
     def __init__(self, user_id, sub_photo_dir):
         self.logger = Logger()
-        self.logger.info(">>Existing initialising with %s %s"%(user_id, sub_photo_dir))
+        self.logger.info(">>Existing initialising with %s %s" %
+            (user_id, sub_photo_dir))
+
         self.user_id = user_id
         self.user_name = sub_photo_dir
+
         if self.user_name not in self.internals['usernames']:
             self.internals['usernames'].append(self.user_name)
-        if os.path.exists(OPT.existing_ids_file) and os.path.isdir(OPT.existing_ids_file):
+
+        if os.path.exists(OPT.existing_ids_file) \
+                and os.path.isdir(OPT.existing_ids_file):
             self.my_file = os.path.join(OPT.existing_ids_file, user_id)
+
         self.restoreFromFile()
 
     def isYounger(self, id, last_update):
         if id in self.internals['lastupdate']:
             if self.internals['lastupdate'][id] < last_update:
                 self.internals['lastupdate'][id] = last_update
-                self.logger.debug("%s is younger"%id)
+                self.logger.debug("%s is younger" % id)
                 return True
-            self.logger.debug("%s is older"%id)
+            self.logger.debug("%s is older" % id)
             return False
         self.internals['lastupdate'][id] = last_update
-        self.logger.debug("%s is younger"%id)
+        self.logger.debug("%s is younger" % id)
         return True
 
     def backupToFile(self):
-        self.logger.info(">>Existing backupToFile (%s)"%(self.user_id))
-        if not self.my_file: return -1
+        self.logger.info(">>Existing backupToFile (%s)" % (self.user_id))
+        if not self.my_file:
+            return -1
+
         if os.path.exists(self.my_file):
-            shutil.move(self.my_file, "%s.bkp"%(self.my_file))
+            shutil.move(self.my_file, "%s.bkp" % (self.my_file))
+
         f = open(self.my_file, 'wb')
         pickle.dump(self.internals, f)
         f.close()
 
     def restoreFromFile(self):
-        self.logger.info(">>Existing restoreFromFile (%s)"%(self.user_id))
+        self.logger.info(">>Existing restoreFromFile (%s)" % (self.user_id))
         if os.path.exists(self.my_file):
             try:
                 f = open(self.my_file, 'rb')
                 self.internals = pickle.load(f)
                 f.close()
             except:
-                self.internals = {'ids':None}
+                self.internals = {'ids': None}
                 # todo change!
                 self.internals['ids'] = self.getIdsFromDir()
         else:
             self.internals['ids'] = self.getIdsFromDir()
+
         if 'usernames' not in self.internals:
             self.internals['usernames'] = []
+
         if self.user_name not in self.internals['usernames']:
             self.internals['usernames'].append(self.user_name)
+
         if 'lastupdate' not in self.internals:
             self.internals['lastupdate'] = {}
 
         return True
 
     def forceReload(self):
-        self.logger.debug(">>Existing forceReload (%s)"%(self.user_id))
+        self.logger.debug(">>Existing forceReload (%s)" % (self.user_id))
         self.internals['ids'] = self.getIdsFromDir()
         return True
 
     def addFile(self, filename):
-        self.logger.debug(">>Existing addFile %s (%s)"%(filename, self.user_id))
+        self.logger.debug(">>Existing addFile %s (%s)" %
+            (filename, self.user_id))
+
         basename = os.path.basename(filename).split('_')
         id = basename[0]
         self.internals['ids'].append(id)
@@ -149,34 +173,23 @@ class Existing():
         return ret
 
     def exists(self, id):
-        if self.internals['ids'] == None:
+        if not self.internals['ids']:
             # todo change
             self.internals['ids'] = self.getIdsFromDir()
 
         return (id in self.internals['ids'])
 
     def grepDontExists(self, ids):
-        ret = []
-        for id in ids:
-            if not self.exists(id): ret.append(id)
-        return ret
+        return [id for id in ids if not self.exists(id)]
 
     def grepPhotosDontExists(self, photos):
         if self.user_id in OPT.check_md5:
             return photos
-        ret = []
-        for photo in photos:
-            if not self.exists(photo['id']): ret.append(photo)
-        return ret
+
+        return [photo for photo in photos if not self.exists(photo['id'])]
 
     def grepExists(self, ids):
-        ret = []
-        for id in ids:
-            if self.exists(id): ret.append(id)
-        return ret
+        return [id for id in ids if self.exists(id)]
 
     def grepPhotosExists(self, photos):
-        ret = []
-        for photo in photos:
-            if self.exists(photo['id']): ret.append(photo)
-        return ret
+        return [photo for photo in photos if self.exists(photo['id'])]
