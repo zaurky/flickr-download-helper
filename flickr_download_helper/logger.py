@@ -103,7 +103,8 @@ class Logger(Singleton):
             self.internal = NoneLogger()
 
     def __getattr__(self, attr):
-        if attr.startswith("__") and attr.endswith("__"):
+        if attr not in ('debug', 'info', 'warn', 'error', 'prompt',
+                'print_tb'):
             raise AttributeError, attr
 
         return getattr(self.internal, attr)
