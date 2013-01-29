@@ -21,7 +21,8 @@ for ID in $IDS; do
   if [ "x$NAME" == "x" ]; then continue; fi
   LINE=`cat $BUFFER | grep "$NAME" | wc -l`
   if [ $LINE -gt 0 ]; then
-    OUTPUT="$OUTPUT$ID $NAME (http://m.flickr.com/photos/$ID)\n"
+    URLNAME=`echo "$NAME" | sed -e 's/ /%20/g'`
+    OUTPUT="$OUTPUT$ID $NAME ($DAILYNEWSURL/20130128?P=$URLNAME*)\n"
     TITLE="$NAME $TITLE"
   fi
 done
