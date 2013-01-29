@@ -12,27 +12,24 @@ def mkdir_p(path):
     except OSError, exc: # Python >2.5
         if exc.errno == errno.EEXIST:
             pass
-        else: raise
+        else:
+            raise
 
 
 def file_load(path):
     try:
-        f = open(path, 'rb')
-        content = pickle.load(f)
-        f.close()
+        with open(path, 'rb') as f:
+            return pickle.load(f)
     except Exception, exc:
         print exc
-        content = None
-    return content
 
 
 def file_dump(path, content):
     if os.path.exists(path):
         shutil.move(path, "%s.bkp" % path)
 
-    f = open(path, 'wb')
-    pickle.dump(content, f)
-    f.close()
+    with open(path, 'wb') as f:
+        pickle.dump(content, f)
 
 
 class FileWrite(Singleton):
@@ -42,9 +39,8 @@ class FileWrite(Singleton):
             if not os.path.exists(dirname):
                 mkdir_p(dirname)
 
-            f = open(filename, 'wb')
-            f.write(content)
-            f.close()
+            with open(filename, 'wb') as f:
+                f.write(content)
 
             if existing is not None:
                 existing.addFile(filename)
@@ -55,9 +51,8 @@ class FileWrite(Singleton):
                     "please delete some files and try again")
 
                 if ret:
-                    f = open(filename, 'wb')
-                    f.write(content)
-                    f.close()
+                    with open(filename, 'wb') as f:
+                        f.write(content)
                 else:
                     raise
             else:
@@ -66,9 +61,9 @@ class FileWrite(Singleton):
 
 class Existing():
     internals = {
-        'ids':None, # a list of all existing ids
-        'usernames':[], # a list of all previous names
-        'lastupdate':{} # for each id, it's last update
+        'ids': None, # a list of all existing ids
+        'usernames': [], # a list of all previous names
+        'lastupdate': {} # for each id, it's last update
     }
     my_file = None
     user_id = None
@@ -93,16 +88,18 @@ class Existing():
 
         self.restoreFromFile()
 
-    def isYounger(self, id, last_update):
-        if id in self.internals['lastupdate']:
-            if self.internals['lastupdate'][id] < last_update:
-                self.internals['lastupdate'][id] = last_update
-                self.logger.debug("%s is younger" % id)
+    def isYounger(self, contact_id, last_update):
+        if contact_id in self.internals['lastupdate']:
+            if self.internals['lastupdate'][contact_id] < last_update:
+                self.internals['lastupdate'][contact_id] = last_update
+                self.logger.debug("%s is younger" % contact_id)
                 return True
-            self.logger.debug("%s is older" % id)
+
+            self.logger.debug("%s is older" % contact_id)
             return False
-        self.internals['lastupdate'][id] = last_update
-        self.logger.debug("%s is younger" % id)
+
+        self.internals['lastupdate'][contact_id] = last_update
+        self.logger.debug("%s is younger" % contact_id)
         return True
 
     def backupToFile(self):
@@ -113,17 +110,15 @@ class Existing():
         if os.path.exists(self.my_file):
             shutil.move(self.my_file, "%s.bkp" % (self.my_file))
 
-        f = open(self.my_file, 'wb')
-        pickle.dump(self.internals, f)
-        f.close()
+        with open(self.my_file, 'wb') as f:
+            pickle.dump(self.internals, f)
 
     def restoreFromFile(self):
         self.logger.info(">>Existing restoreFromFile (%s)" % (self.user_id))
         if os.path.exists(self.my_file):
             try:
-                f = open(self.my_file, 'rb')
-                self.internals = pickle.load(f)
-                f.close()
+                with open(self.my_file, 'rb') as f:
+                    self.internals = pickle.load(f)
             except:
                 self.internals = {'ids': None}
                 # todo change!
@@ -152,12 +147,11 @@ class Existing():
             (filename, self.user_id))
 
         basename = os.path.basename(filename).split('_')
-        id = basename[0]
-        self.internals['ids'].append(id)
+        self.internals['ids'].append(basename[0])
 
     def readDir(self, directory):
         ret = []
-        for root, dirs, files in os.walk(directory):
+        for _, _, files in os.walk(directory):
             ret.extend(files)
         return ret
 
@@ -166,21 +160,20 @@ class Existing():
         for user_name in self.internals['usernames']:
             directory = os.path.join(OPT.photo_dir, user_name)
             files = self.readDir(directory)
-            for file in files:
-                f = file.split("_")
-                id = f[0]
-                ret.append(id)
+            for filename in files:
+                f = filename.split("_")
+                ret.append(f[0])
         return ret
 
-    def exists(self, id):
+    def exists(self, photo_id):
         if not self.internals['ids']:
             # todo change
             self.internals['ids'] = self.getIdsFromDir()
 
-        return (id in self.internals['ids'])
+        return photo_id in self.internals['ids']
 
     def grepDontExists(self, ids):
-        return [id for id in ids if not self.exists(id)]
+        return [photo_id for photo_id in ids if not self.exists(photo_id)]
 
     def grepPhotosDontExists(self, photos):
         if self.user_id in OPT.check_md5:
@@ -189,7 +182,7 @@ class Existing():
         return [photo for photo in photos if not self.exists(photo['id'])]
 
     def grepExists(self, ids):
-        return [id for id in ids if self.exists(id)]
+        return [photo_id for photo_id in ids if self.exists(photo_id)]
 
     def grepPhotosExists(self, photos):
         return [photo for photo in photos if self.exists(photo['id'])]
