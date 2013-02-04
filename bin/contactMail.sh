@@ -7,6 +7,7 @@ LOG="$FDHPATH/log/fdh.log"
 IDS=`cat $FDHPATH/files/id_to_mail`
 
 DATE=`date --date="1 hour ago" +%Y-%m-%d`
+URLDATE=`date --date="1 hour ago" +%Y%m%d`
 HOUR=`date --date="1 hour ago" +%H`
 
 BUFFER="$TMPDIR/log.buffer.$HOUR"
@@ -22,7 +23,7 @@ for ID in $IDS; do
   LINE=`cat $BUFFER | grep "$NAME" | wc -l`
   if [ $LINE -gt 0 ]; then
     URLNAME=`echo "$NAME" | sed -e 's/ /%20/g'`
-    OUTPUT="$OUTPUT$ID $NAME ($DAILYNEWSURL/20130128?P=$URLNAME*)\n"
+    OUTPUT="$OUTPUT$ID $NAME ($DAILYNEWSURL/$URLDATE?P=$URLNAME*)\n"
     TITLE="$NAME $TITLE"
   fi
 done
