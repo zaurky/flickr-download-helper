@@ -312,7 +312,7 @@ class API(object):
                 if INS.get('put_group_in_session'):
                     INS['groups'][group_id] = content
 
-                INS.get('temp_groups', {}).pop(group_id)
+                INS.get('temp_groups', {}).pop(group_id, None)
                 file_dump(gpath, content)
             return content
 
