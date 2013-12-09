@@ -2,6 +2,7 @@ import Flickr.API
 import urllib2
 import httplib
 import simplejson
+from socket import timeout
 import sys
 import os
 
@@ -85,7 +86,7 @@ class API(object):
             else:
                 raise
         except urllib2.URLError, err:
-            if err.errno == 110: # Connection timed out
+            if err.errno in (110, 408): # Connection timed out
                 # try again
                 resp = self.api.execute_request(request, sign=True)
             else:
@@ -96,6 +97,14 @@ class API(object):
                 resp = self.api.execute_request(request, sign=True)
             except:
                 raise
+        except timeout:
+            Logger().debug("request timeout, retry once")
+            resp = self.api.execute_request(request, sign=True)
+        except Exception, err:
+            Logger().debug("Exception %s" % err)
+            Logger().debug(type(err))
+            Logger().debug(dir(err))
+            raise
 
         return self.parse_response(resp, msg, msg_params)
 
