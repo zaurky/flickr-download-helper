@@ -264,8 +264,11 @@ def main():
                 if count:
                     Logger().debug("got %i photos in group %s" % (count, group_id))
 
+            Logger().debug("done with retrieving groups, now filtering")
             existing, photos, infos = filter_photos(
                 user_id, user_name, photos, existing)
+
+            Logger().debug("photos filtered, still %d photos" % len(photos))
             urls = flickr_api.getPhotoURLFlickr(photos, OPT.fast_photo_url)
             user_name, destination = create_dir_env(user_name)
 
