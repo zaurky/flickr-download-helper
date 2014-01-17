@@ -3,7 +3,7 @@
 . /etc/fdh/fdh.sh
 
 
-CURRENTSIZE=`df -k | grep "$MOUNTEDON" | awk '{print $4}'`
+CURRENTSIZE=`df -k | grep "$MOUNTEDON" | awk '{print $4}' | head -n 1`
 
 if [ $MINSIZE -gt $CURRENTSIZE ]; then
     if [ ! -f "$EMERGENCYFLAG" ]; then
