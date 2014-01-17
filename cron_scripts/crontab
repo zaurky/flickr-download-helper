@@ -18,7 +18,8 @@
 0 2 * * 0,2,4,6 /root/fdh/cron_scripts/flickr.tfg
 
 # demarre toutes les heures a 30
-30 * * * * /root/fdh/bin/contactRevChange.sh
+30 * * * * /root/fdh/bin/contactRevChange.sh  > /root/fdh/log/contactRevChange.sh.stdout 2> /root/fdh/log/contactRevChange.sh.stderr
+
 # demarre toutes les heures a 45
 45 * * * * /root/fdh/bin/contactChange.sh
 
