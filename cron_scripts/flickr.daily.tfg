@@ -10,7 +10,7 @@ if [ "x$DISABLE" == "x" ] && [ -d '/mnt/olivier/photo_flickr_download_helper/' ]
     rm -f $FLICKRDIR/log/tdf.std*
 
     for i in `cat "$DAILYTFG"`; do
-        echo "$i"
+        echo "$i" >> $FLICKRDIR/log/tdf.daily.stdout
         flickr_download_helper.py -d -r --dw --nick "$i" --tfg >> $FLICKRDIR/log/tdf.daily.stdout 2>> $FLICKRDIR/log/tdf.daily.stderr
     done
 fi
