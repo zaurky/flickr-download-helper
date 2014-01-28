@@ -1,0 +1,7 @@
+#!/bin/bash
+
+. /etc/fdh/fdh.sh
+
+
+LASTMONTH=`date --date="1 month ago" +%Y-%m`
+rm -f $FLICKRDIR/log/${LASTMONTH}*
