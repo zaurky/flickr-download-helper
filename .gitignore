@@ -10,3 +10,4 @@ cron_scripts/rsync_id_cache
 cron_scripts/sync_files
 html/markup-1.7/
 sql/
+venv
