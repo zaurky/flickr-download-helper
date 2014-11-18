@@ -1,0 +1,48 @@
+import sys
+import argparse
+
+
+def shell(**kwargs):
+    try:
+        from IPython import embed
+        from IPython.config.loader import Config
+        cfg = Config()
+        cfg.InteractiveShellEmbed.confirm_exit = False
+        embed(config=cfg, banner1="FDH Shell")
+    except ImportError:
+        # try ~IPython-0.10 API
+        try:
+            from IPython.Shell import IPShellEmbed as embed
+            ipshell = embed(banner="FDH Shell")
+            ipshell()
+        except ImportError:
+            import code
+            code.interact("FDH Shell", local=locals())
+
+
+def group(**kwargs):
+    pass
+
+
+def main(args=sys.argv):
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', dest='conffile', default='/etc/fdh/fdh.ini')
+    subparsers = parser.add_subparsers(title='action')
+
+    kwargs = parser.parse_args(args[1:])
+    kwargs = vars(kwargs)
+
+    config_uri = kwargs.pop('conffile')
+    func = kwargs.pop('func')
+
+    setup_logging(config_uri)
+
+    # CHECK
+    settings = get_appsettings(config_uri, u'main')
+    kwargs['settings'] = settings
+    func(**kwargs)
+
+
+if __name__ == '__main__':
+    main()
